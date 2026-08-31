@@ -7,6 +7,6 @@ run-client:
 run-client-gui:
 	true
 lint:
-	true
+	golangci-lint run
 clean:
 	true

@@ -1,7 +1,55 @@
+// https://gobyexample.com/tcp-server
+
 package main
 
-import "fmt"
+import (
+    "bufio"
+    "fmt"
+    "log"
+    "net"
+    "strings"
+)
 
 func main() {
-    fmt.Println("Hello, World!")
+    listener, err := net.Listen("tcp", ":8090")
+    if err != nil {
+        log.Fatal("Error listening:", err)
+    }
+
+    defer func() {
+		if err := listener.Close(); err != nil {
+			log.Printf("Error closing listener: %v", err)
+		}
+	}()
+
+    for {
+        conn, err := listener.Accept()
+        if err != nil {
+            log.Println("Error accepting conn:", err)
+            continue
+        }
+        go handleConnection(conn)
+    }
+}
+
+func handleConnection(conn net.Conn) {
+    defer func() {
+		if err := conn.Close(); err != nil {
+			log.Printf("Error closing connection: %v", err)
+		}
+	}()
+
+    reader := bufio.NewReader(conn)
+    message, err := reader.ReadString('\n')
+    if err != nil {
+        log.Printf("Read error: %v", err)
+        return
+    }
+
+    ackMsg := strings.ToUpper(strings.TrimSpace(message))
+    response := fmt.Sprintf("Response: %s\n", ackMsg)
+    _, err = conn.Write([]byte(response))
+    if err != nil {
+        log.Printf("Server write error: %v", err)
+    }
 }
