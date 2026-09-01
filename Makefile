@@ -1,12 +1,13 @@
 install:
-	true
+	cd frontend && npm install
 run-server:
-	go run main.go
+	cd server && go run main.go
 run-client:
-	true
+	cd cli && go run main.go
 run-client-gui:
-	true
+	cd frontend && npm run dev
 lint:
 	golangci-lint run
+	cd frontend && npm run lint
 clean:
 	true
