@@ -10,4 +10,4 @@ lint:
 	golangci-lint run
 	cd frontend && npm run lint
 clean:
-	true
+	rm -rf frontend/node_modules

@@ -40,16 +40,22 @@ func handleConnection(conn net.Conn) {
 	}()
 
     reader := bufio.NewReader(conn)
-    message, err := reader.ReadString('\n')
-    if err != nil {
-        log.Printf("Read error: %v", err)
-        return
+    for {
+        message, err := reader.ReadString('\n')
+        if err != nil {
+            log.Printf("Read error: %v", err)
+            return
+        }
+
+        answer := strings.TrimSpace(message)
+        response := fmt.Sprintf("Response: %s\n", answer)
+        _, err = conn.Write([]byte(response))
+        if err != nil {
+            log.Printf("Server write error: %v", err)
+        }
     }
 
-    ackMsg := strings.ToUpper(strings.TrimSpace(message))
-    response := fmt.Sprintf("Response: %s\n", ackMsg)
-    _, err = conn.Write([]byte(response))
-    if err != nil {
-        log.Printf("Server write error: %v", err)
-    }
 }
+
+//connect to server "netcat localhost 8090"
+//free the port "kill -9 $(lsof -t -i:8090)"
