@@ -11,6 +11,7 @@ import (
 )
 
 func main() {
+    parsing("data.json")
     listener, err := net.Listen("tcp", ":8090")
     if err != nil {
         log.Fatal("Error listening:", err)
