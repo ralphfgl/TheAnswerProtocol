@@ -1,5 +1,7 @@
 import './App.css'
 import { useEffect, useRef, useState } from "react"
+import Header from './header/Header'
+import ChatPanel from './chatpanel/ChatPanel'
 
 function App() {
   const [messages, setMessages] = useState([])
@@ -53,7 +55,12 @@ function App() {
   return (
     <>
       <main className='main'>
-        <h1 className='header'>The answer Protocol</h1>
+        <h1 className='title'>The answer Protocol</h1>
+        <Header />
+        <ChatPanel />
+        <br></br>
+        <br></br>
+        <br></br>
         <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button>Send</button>
