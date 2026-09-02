@@ -8,6 +8,7 @@ import (
     "log"
     "net"
     "strings"
+    //"sync"
 )
 
 func main() {
@@ -16,11 +17,12 @@ func main() {
         log.Fatal("Error listening:", err)
     }
 
-    defer func() {
-		if err := listener.Close(); err != nil {
-			log.Printf("Error closing listener: %v", err)
-		}
-	}()
+    defer listener.Close()
+	//    defer func() {
+	// 	if err := listener.Close(); err != nil {
+	// 		log.Printf("Error closing listener: %v", err)
+	// 	}
+	// }()
 
     for {
         conn, err := listener.Accept()
@@ -33,23 +35,43 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
-    defer func() {
-		if err := conn.Close(); err != nil {
-			log.Printf("Error closing connection: %v", err)
-		}
-	}()
+    defer   conn.Close()
+	//    defer func() {
+	// 	if err := conn.Close(); err != nil {
+	// 		log.Printf("Error closing connection: %v", err)
+	// 	}
+	// }()
 
+    fmt.Fprint(conn, "OK hello proto=1\n")
     reader := bufio.NewReader(conn)
-    message, err := reader.ReadString('\n')
-    if err != nil {
-        log.Printf("Read error: %v", err)
-        return
-    }
 
-    ackMsg := strings.ToUpper(strings.TrimSpace(message))
-    response := fmt.Sprintf("Response: %s\n", ackMsg)
-    _, err = conn.Write([]byte(response))
-    if err != nil {
-        log.Printf("Server write error: %v", err)
+    for {
+        line, err := reader.ReadString('\n')
+        if err != nil {
+            return
+        }
+    line = strings.TrimSpace(line)
+    fmt.Println("Received:", line)
     }
 }
+
+// to handle connection state (DISCONNECTED, CONNECTED, AUTHENTIFICATED< TERMINATED)
+// type ConnectionState int
+// const (
+//     Connected ConnectionState = iota
+//     Autenticated
+//     Terminated
+// )
+
+// go map to store the playerbase -> we will need mutex cause all go routine will access this part
+// players := make(map[string]net.Conn)
+
+// RFC says : message = command-line / response-line / event-line (its either one)
+
+// client connection should probably control writes (to avoid receiving message from many goroutine simultaneously)
+// well need a Player (or client connection strucute)
+// type Player struct {
+//     Username    string
+//     Conn        net.conn
+//     Mu          sync.Mutex
+// }
