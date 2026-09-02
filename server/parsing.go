@@ -45,26 +45,27 @@ type NPC struct {
 	Stats       map[string]int
 }
 
-func parsing(fileName string) {
+func parsing(fileName string) GameWorld {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
         fmt.Println("Error reading file:", err)
-        return
+        return GameWorld{}
     }
 	var game GameWorld
 	err = json.Unmarshal(data, &game)
 	if err != nil {
 		fmt.Println("Error parsing:", err)
-		return
+		return GameWorld{}
 	}
-	for _, loc := range game.World.Locations {
-		fmt.Printf("[%s] %s: %s\n", loc.Id, loc.Name, loc.Description)
-	}
-	for _, item := range game.World.Items {
-		fmt.Printf("[%s] %s (%t)\n", item.Id, item.Name, item.Obtainable)
-	}
-	for _, npc := range game.World.NPCs {
-		fmt.Printf("[%s] %s (HP: %d)\n", npc.Id, npc.Name, npc.Stats["hp"])
-	}
+	// for _, loc := range game.World.Locations {
+	// 	fmt.Printf("[%s] %s: %s\n", loc.Id, loc.Name, loc.Description)
+	// }
+	// for _, item := range game.World.Items {
+	// 	fmt.Printf("[%s] %s (%t)\n", item.Id, item.Name, item.Obtainable)
+	// }
+	// for _, npc := range game.World.NPCs {
+	// 	fmt.Printf("[%s] %s (HP: %d)\n", npc.Id, npc.Name, npc.Stats["hp"])
+	// }
+	return game
 }
 

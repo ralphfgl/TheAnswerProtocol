@@ -1,5 +1,3 @@
-// https://gobyexample.com/tcp-server
-
 package main
 
 import (
@@ -11,7 +9,7 @@ import (
 )
 
 func main() {
-    parsing("data.json")
+    parsing("../data.json")
     listener, err := net.Listen("tcp", ":8090")
     if err != nil {
         log.Fatal("Error listening:", err)
@@ -58,5 +56,4 @@ func handleConnection(conn net.Conn) {
 
 }
 
-//connect to server "netcat localhost 8090"
 //free the port "kill -9 $(lsof -t -i:8090)"
