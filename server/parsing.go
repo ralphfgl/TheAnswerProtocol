@@ -48,9 +48,9 @@ type NPC struct {
 func parsing(fileName string) GameWorld {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
-        fmt.Println("Error reading file:", err)
-        return GameWorld{}
-    }
+		fmt.Println("Error reading file:", err)
+		return GameWorld{}
+	}
 	var game GameWorld
 	err = json.Unmarshal(data, &game)
 	if err != nil {
@@ -68,4 +68,3 @@ func parsing(fileName string) GameWorld {
 	// }
 	return game
 }
-

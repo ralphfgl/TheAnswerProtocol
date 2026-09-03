@@ -47,9 +47,9 @@ type Player struct {
 
 type Server struct {
 	// declare a map with string keys and value of *Player type (pointer to player struct)
-	players map[string]*Player
-	mu      sync.RWMutex
-	//cmdRegistry *CommandRegistry
+	players     map[string]*Player
+	mu          sync.RWMutex
+	cmdRegistry *CommandRegistry
 }
 
 // constructor, create a server instance
@@ -57,8 +57,8 @@ type Server struct {
 // we use a struct literal, no malloc is needed
 func NewServer() *Server {
 	return &Server{
-		players: make(map[string]*Player),
-		// cmdRegistry: NewCommandRegistry(),
+		players:     make(map[string]*Player),
+		cmdRegistry: NewCommandRegistry(),
 	}
 }
 
@@ -96,7 +96,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}()
 	// send greetings
 	s.sendResponse(player, "OK hello proto=1")
-	s.sendResponse(player, jsonTest)
+	//s.sendResponse(player, jsonTest)
 
 	reader := bufio.NewReader(conn)
 	for {
@@ -114,7 +114,57 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 }
 
+func (s *Server) handleCommand(player *Player, line string) {
+	parts := strings.Fields(line)
+	if len(parts) == 0 {
+		return
+	}
+	// NOTE: later we need to change this to forbid lowercase COMMAND
+	commandName := strings.ToUpper(parts[0])
+	args := parts[1:]
+	cmd, exists := s.cmdRegistry.commands[commandName]
+	if !exists {
+		// NOTE: add logg -- maybe custom error code on unknown command
+		s.sendError(player, 400, fmt.Sprintf("UNKNOWN_COMMAND: %s", commandName))
+		return
+	}
+	if len(args) < cmd.MinArgs {
+		s.sendError(player, 400, fmt.Sprintf("TOO_FEW_ARGS: Need at least %d arguments", cmd.MinArgs))
+		return
+	}
+	if cmd.MaxArgs > 0 && len(args) > cmd.MaxArgs {
+		s.sendError(player, 400, fmt.Sprintf("TOO_MANY_ARGS: Maximum %d arguments allowed", cmd.MaxArgs))
+		return
+	}
+	if cmd.Validator != nil {
+		if err := cmd.Validator(args); err != nil {
+			s.sendError(player, 400, fmt.Sprintf("INVALID_ARGS: %s", err.Error()))
+			return
+		}
+	}
+	//fmt.Printf(commandName)
+	switch commandName {
+	case "CONNECT":
+		s.handleConnect(player, args[0])
+	case "QUIT":
+		s.handleQuit(player)
+	default:
+		if player.State != Authenticated {
+			s.sendError(player, 401, "NOT_AUTHENTICATED")
+		}
+		if err := cmd.Handler(player, args); err != nil {
+			s.sendError(player, 500, err.Error())
+			return
+		}
+	}
+	if err := cmd.Handler(player, args); err != nil {
+		s.sendError(player, 500, fmt.Sprintf("COMMAND_ERROR: %s", err.Error()))
+		return
+	}
+}
+
 // NOTE: will move this method to the command file (modified to work with a command registry)
+/*
 func (s *Server) handleCommand(player *Player, line string) {
 	// func SplitN(s, sep string, n int) []string -> s the string to split, n max number of piece to return (if negative split all occurences. Returns a slice of substring
 	parts := strings.SplitN(line, " ", 2)
@@ -136,6 +186,7 @@ func (s *Server) handleCommand(player *Player, line string) {
 		s.handleCommandAuthenticated(player, command, args)
 	}
 }
+*/
 
 func (s *Server) handleConnect(player *Player, username string) {
 	// NOTE: we handle the state issue as a 400 error, even if not present in the RFC
@@ -174,28 +225,28 @@ func (s *Server) handleQuit(player *Player) {
 	player.Conn.Close()
 }
 
-func (s *Server) handleCommandAuthenticated(player *Player, command string, args string) {
-	switch command {
-	case "LOOK":
-		// placeholder
-	case "MOVE":
-	case "CHAT":
-	case "WHO":
-	case "GROUP CREATE":
-	case "GROUP INVITE":
-	case "GROUP JOIN":
-	case "GROUP LEAVE":
-	case "TAKE":
-	case "DROP":
-	case "INVENTORY":
-	case "TALK":
-	case "ATTACK":
-	case "STATUS":
-	case "QUEST":
-	case "QUESTS":
-
-	}
-}
+// func (s *Server) handleCommandAuthenticated(player *Player, command string, args string) {
+// 	switch command {
+// 	case "LOOK":
+// 		// placeholder
+// 	case "MOVE":
+// 	case "CHAT":
+// 	case "WHO":
+// 	case "GROUP CREATE":
+// 	case "GROUP INVITE":
+// 	case "GROUP JOIN":
+// 	case "GROUP LEAVE":
+// 	case "TAKE":
+// 	case "DROP":
+// 	case "INVENTORY":
+// 	case "TALK":
+// 	case "ATTACK":
+// 	case "STATUS":
+// 	case "QUEST":
+// 	case "QUESTS":
+//
+// 	}
+// }
 
 // NOTE: general sendResponse and then wrapper for error, event
 func (s *Server) sendResponse(player *Player, message string) {
