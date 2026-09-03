@@ -33,6 +33,7 @@ type Server struct {
 	// declare a map with string keys and value of *Player type (pointer to player struct)
 	players map[string]*Player
 	mu      sync.RWMutex
+	//cmdRegistry *CommandRegistry
 }
 
 // constructor, create a server instance
@@ -41,6 +42,7 @@ type Server struct {
 func NewServer() *Server {
 	return &Server{
 		players: make(map[string]*Player),
+		// cmdRegistry: NewCommandRegistry(),
 	}
 }
 
