@@ -6,7 +6,7 @@ import RoomView from './RoomView/RoomView'
 import ActionPanel from './ActionPanel/ActionPanel'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [nickname, setNickname] = useState("")
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
@@ -48,7 +48,7 @@ function App() {
 
       websocket.onmessage = function (event) {
         parseMessage(event.data)
-        //setMessages(prevMessage => [...prevMessage, event.data])
+        setMessages(prevMessage => [...prevMessage, event.data])
       };
 
       websocket.onclose = function () {
@@ -75,10 +75,10 @@ function App() {
 
   const sendMessage = (e) => {
     e.preventDefault()
-    // if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-    //   wsRef.current.send(inputValue)
-    // }
-    // setInputValue("")
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(inputValue)
+    }
+    setInputValue("")
   }
 
   const sendCommand = (command) => {
@@ -94,8 +94,8 @@ function App() {
 
   const submitLogin = (e) => {
     e.preventDefault()
-    wsRef.current.send("CONNECT" + nickname)
-    //setIsAuthenticated(true)
+    wsRef.current.send("CONNECT " + nickname)
+    setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
@@ -122,13 +122,13 @@ function App() {
           <RoomView data={roomdata} onCommand={sendCommand} />
           <ActionPanel />
         </div>
-        {/* <form onSubmit={sendMessage}>
+        <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button>Send</button>
         </form>
         {messages.map((value, index) => (
           <p key={index}>{value}</p>
-        ))} */}
+        ))}
       </main>
     </>
   )
