@@ -10,20 +10,20 @@ import (
 )
 
 type CLIClient struct {
-	conn		net.Conn
-	reader		*bufio.Reader
-	username	string
+	conn     net.Conn
+	reader   *bufio.Reader
+	username string
 }
 
-// constructor
+// NewCLIClient constructor
 func NewCLIClient(server string) (*CLIClient, error) {
-	conn, err := net.DialTimeout("tcp", server, 5 * time.Second)
+	conn, err := net.DialTimeout("tcp", server, 5*time.Second)
 	if err != nil {
 		return nil, err
 	}
 	return &CLIClient{
-		conn:	conn,
-		reader:	bufio.NewReader(conn),
+		conn:   conn,
+		reader: bufio.NewReader(conn),
 	}, nil
 }
 
@@ -65,7 +65,8 @@ func main() {
 	response, _ := client.Read()
 	fmt.Print(response)
 
-	// listen for server messages
+	// listen for server messages in the background
+	// we launch anonymous function as goroutine to prevent blocking the main
 	go func() {
 		for {
 			msg, err := client.Read()
@@ -77,7 +78,7 @@ func main() {
 		}
 	}()
 
-	// handle user input
+	// handle user input in the foreground
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Print("> ")
 	for scanner.Scan() {

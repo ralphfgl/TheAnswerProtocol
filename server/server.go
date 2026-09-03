@@ -21,23 +21,24 @@ const (
 )
 
 type Player struct {
-	Username	string
-	Conn		net.Conn
-	State		ConnectionState
-	Mu			sync.Mutex
+	Username string
+	Conn     net.Conn
+	State    ConnectionState
+	Mu       sync.Mutex
 	// bufio.Writer add a buffer on top of an underlying io.Writer
-	Writer		*bufio.Writer
+	Writer *bufio.Writer
 }
 
 type Server struct {
-	players	map[string]*Player // declare a map with string keys and value of *Player type (pointer to player struct)
-	mu		sync.RWMutex
+	// declare a map with string keys and value of *Player type (pointer to player struct)
+	players map[string]*Player
+	mu      sync.RWMutex
 }
 
 // constructor, create a server instance
 // mutex has a zero value and is already usable
 // we use a struct literal, no malloc is needed
-func NewServer() Server {
+func NewServer() *Server {
 	return &Server{
 		players: make(map[string]*Player),
 	}
@@ -66,9 +67,9 @@ func main() {
 func (s *Server) handleConnection(conn net.Conn) {
 	// create player in CONNECTED state
 	player := &Player{
-		Conn:	conn,
-		State:	Connected,
-		Writer:	bufio.NewWriter(conn),
+		Conn:   conn,
+		State:  Connected,
+		Writer: bufio.NewWriter(conn),
 	}
 	// clean up on exit
 	defer func() {
@@ -89,10 +90,12 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if line == "" {
 			continue
 		}
+		// NOTE: add parsing of the command here before handling
 		s.handleCommand(player, line)
 	}
 }
 
+// NOTE: will move this method to the command file (modified to work with a command registry)
 func (s *Server) handleCommand(player *Player, line string) {
 	// func SplitN(s, sep string, n int) []string -> s the string to split, n max number of piece to return (if negative split all occurences. Returns a slice of substring
 	parts := strings.SplitN(line, " ", 2)
@@ -116,6 +119,7 @@ func (s *Server) handleCommand(player *Player, line string) {
 }
 
 func (s *Server) handleConnect(player *Player, username string) {
+	// NOTE: we handle the state issue as a 400 error, even if not present in the RFC
 	if player.State != Connected {
 		s.sendError(player, 400, "INVALID_STATE")
 		return
@@ -137,20 +141,24 @@ func (s *Server) handleConnect(player *Player, username string) {
 	// registration
 	player.Username = username
 	player.State = Authenticated
-	s.player[username] = player
+	s.players[username] = player
+
 	s.sendResponse(player, "OK connected")
+	// NOTE: add IP and maybe format the timestamp
 	log.Printf("Player %s connected", username)
 }
 
 func (s *Server) handleQuit(player *Player) {
 	s.sendResponse(player, "OK goodbye")
 	log.Printf("Player %s quit", player.Username)
+	// NOTE: the defer will clean up, this is redundunt
 	player.Conn.Close()
 }
 
 func (s *Server) handleCommandAuthenticated(player *Player, command string, args string) {
 	switch command {
 	case "LOOK":
+		// placeholder
 	case "MOVE":
 	case "CHAT":
 	case "WHO":
@@ -167,5 +175,31 @@ func (s *Server) handleCommandAuthenticated(player *Player, command string, args
 	case "QUEST":
 	case "QUESTS":
 
+	}
+}
+
+// NOTE: general sendResponse and then wrapper for error, event
+func (s *Server) sendResponse(player *Player, message string) {
+	player.Mu.Lock()
+	defer player.Mu.Unlock()
+	if !strings.HasSuffix(message, "\n") {
+		message += "\n"
+	}
+	// NOTE: add error checking on both write string and flush
+	player.Writer.WriteString(message)
+	player.Writer.Flush()
+}
+
+func (s *Server) sendError(player *Player, code int, message string) {
+	s.sendResponse(player, fmt.Sprintf("ERR %03d %s", code, message))
+}
+
+func (s *Server) removePlayer(player *Player) {
+	if player.Username != "" {
+		s.mu.Lock()
+		delete(s.players, player.Username)
+		s.mu.Unlock()
+		// NOTE: add timestamp and ip address
+		log.Printf("Player %s removed", player.Username)
 	}
 }
