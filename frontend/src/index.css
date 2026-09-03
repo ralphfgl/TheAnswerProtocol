@@ -1,5 +1,5 @@
 :root {
-  background-color: aquamarine;
+  background-color: #fefadc;
   @media (max-width: 1024px) {
     font-size: 16px;
   }

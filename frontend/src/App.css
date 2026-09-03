@@ -10,3 +10,40 @@
   margin-bottom: 10px;
   padding: 10px;
 }
+
+.panel_list{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.login_form{
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.login_input{
+  font-size: 24px;
+  border-radius: 15px;
+  padding: 10px;
+  border: 1px solid grey;
+}
+
+.login_button{
+  font-size: 16px;
+  cursor: pointer;
+  border-radius: 15px;
+  padding: 0px 30px;
+  height: 49px;
+  border: 0;
+  background-color: #feea00
+}
+
+.login_button:hover{
+  background-color: #d6c725;
+  transition: 0.2s;
+}

@@ -1,12 +1,39 @@
 import './App.css'
 import { useEffect, useRef, useState } from "react"
-import Header from './header/Header'
-import ChatPanel from './chatpanel/ChatPanel'
+import Header from './Header/Header'
+import ChatPanel from './ChatPanel/ChatPanel'
+import RoomView from './RoomView/RoomView'
+import ActionPanel from './ActionPanel/ActionPanel'
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const [nickname, setNickname] = useState("")
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
+
+  const roomdata = {
+    "id": "shop",
+    "name": "General Store",
+    "description": "Shelves lined with various goods and supplies.",
+    "exits": {
+      "west": "start"
+    },
+    "spawns": [
+      {
+        "npc_type": "merchant",
+        "count": 1
+      },
+    ]
+  }
+
+  const headerdata =
+  {
+    "name": nickname,
+    "health": 100,
+    "players": 10,
+    "players_room": 2
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -20,7 +47,8 @@ function App() {
       };
 
       websocket.onmessage = function (event) {
-        setMessages(prevMessage => [...prevMessage, event.data])
+        parseMessage(event.data)
+        //setMessages(prevMessage => [...prevMessage, event.data])
       };
 
       websocket.onclose = function () {
@@ -47,27 +75,60 @@ function App() {
 
   const sendMessage = (e) => {
     e.preventDefault()
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(inputValue)
-    }
-    setInputValue("")
+    // if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+    //   wsRef.current.send(inputValue)
+    // }
+    // setInputValue("")
   }
+
+  const sendCommand = (command) => {
+    console.log(command)
+    wsRef.current.send(command)
+  }
+
+  const parseMessage = (message) => {
+    if (message.startsWith("OK connected")) {
+      setIsAuthenticated(true)
+    }
+  }
+
+  const submitLogin = (e) => {
+    e.preventDefault()
+    wsRef.current.send("CONNECT" + nickname)
+    //setIsAuthenticated(true)
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    setNickname("")
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <form className='login_form' onSubmit={(event) => submitLogin(event)}>
+        <input className='login_input' type="text" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        <button className='login_button'>Apply</button>
+      </form>
+    )
+  }
+
   return (
     <>
       <main className='main'>
         <h1 className='title'>The answer Protocol</h1>
-        <Header />
-        <ChatPanel />
-        <br></br>
-        <br></br>
-        <br></br>
-        <form onSubmit={sendMessage}>
+        <Header data={headerdata} onLogout={handleLogout} />
+        <div className='panel_list'>
+          <ChatPanel />
+          <RoomView data={roomdata} onCommand={sendCommand} />
+          <ActionPanel />
+        </div>
+        {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button>Send</button>
         </form>
         {messages.map((value, index) => (
           <p key={index}>{value}</p>
-        ))}
+        ))} */}
       </main>
     </>
   )
