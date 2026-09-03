@@ -95,7 +95,6 @@ function App() {
   const submitLogin = (e) => {
     e.preventDefault()
     wsRef.current.send("CONNECT " + nickname)
-    setIsAuthenticated(true)
   }
 
   const handleLogout = () => {
