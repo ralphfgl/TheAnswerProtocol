@@ -9,6 +9,22 @@ import (
 	"sync"
 )
 
+const jsonTest = `{
+	"type": "room"
+	"id": "shop",
+	"name": "General Store",
+	"description": "Shelves lined with various goods and supplies.",
+"exits": {
+  "west": "start"
+},
+"spawns": [
+  {
+	"npc_type": "merchant",
+	"count": 1
+  },
+]
+}`
+
 type ConnectionState int
 
 // type and expression is inherited from previous line
@@ -80,6 +96,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}()
 	// send greetings
 	s.sendResponse(player, "OK hello proto=1")
+	s.sendResponse(player, jsonTest)
 
 	reader := bufio.NewReader(conn)
 	for {
