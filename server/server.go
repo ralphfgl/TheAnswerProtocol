@@ -9,21 +9,7 @@ import (
 	"sync"
 )
 
-const jsonTest = `{
-	"type": "room"
-	"id": "shop",
-	"name": "General Store",
-	"description": "Shelves lined with various goods and supplies.",
-"exits": {
-  "west": "start"
-},
-"spawns": [
-  {
-	"npc_type": "merchant",
-	"count": 1
-  },
-]
-}`
+const jsonTest = `{"type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": {"west": "start"}, "spawns": [{"npc_type": "merchant", "count": 1}, {"npc_type": "TEST", "count": 2}]}`
 
 type ConnectionState int
 
@@ -96,7 +82,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}()
 	// send greetings
 	s.sendResponse(player, "OK hello proto=1")
-	s.sendResponse(player, jsonTest)
 
 	reader := bufio.NewReader(conn)
 	for {
@@ -163,6 +148,7 @@ func (s *Server) handleConnect(player *Player, username string) {
 	s.players[username] = player
 
 	s.sendResponse(player, "OK connected")
+	s.sendResponse(player, jsonTest)
 	// NOTE: add IP and maybe format the timestamp
 	log.Printf("Player %s connected", username)
 }
