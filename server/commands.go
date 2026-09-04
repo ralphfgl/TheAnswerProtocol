@@ -21,15 +21,15 @@ type CommandRegistry struct {
 }
 
 // command registry constructor
-func NewCommandRegistry() *CommandRegistry {
+func NewCommandRegistry(s *Server) *CommandRegistry {
 	cr := &CommandRegistry{
 		commands: make(map[string]*Command),
 	}
-	cr.registerCommands()
+	cr.registerCommands(s)
 	return cr
 }
 
-func (cr *CommandRegistry) registerCommands() {
+func (cr *CommandRegistry) registerCommands(s *Server) {
 	cr.commands["CONNECT"] = &Command{
 		Name:         "CONNECT",
 		MinArgs:      1,
@@ -41,7 +41,10 @@ func (cr *CommandRegistry) registerCommands() {
 			}
 			return nil
 		},
-		// NOTE: no handler cause connect is a special function
+		Handler: func(p *Player, args []string) error {
+			s.handleConnect(p, args[0])
+			return nil
+		},
 	}
 	cr.commands["QUIT"] = &Command{
 		Name:         "QUIT",
@@ -52,6 +55,10 @@ func (cr *CommandRegistry) registerCommands() {
 			if len(args) > 0 {
 				return fmt.Errorf("QUIT takes no arguments")
 			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			s.handleQuit(p)
 			return nil
 		},
 	}
@@ -68,7 +75,7 @@ func (cr *CommandRegistry) registerCommands() {
 			return nil
 		},
 		Handler: func(p *Player, args []string) error {
-			// place holder for look logic
+			// NOTE: return a json of room type
 			return nil
 		},
 	}
