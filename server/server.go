@@ -70,6 +70,7 @@ func main() {
 		log.Fatal("Error listening:", err)
 	}
 	defer listener.Close()
+	// NOTE: change print to a dynamic value
 	log.Println("TAP Server starting on :8090")
 
 	for {
