@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"strings"
 	"sync"
 )
@@ -42,25 +43,37 @@ type Player struct {
 	State    ConnectionState
 	Mu       sync.Mutex
 	// bufio.Writer add a buffer on top of an underlying io.Writer
-	Writer *bufio.Writer
+	Writer      *bufio.Writer
+	CurrentRoom string
 }
 
 type Server struct {
 	// declare a map with string keys and value of *Player type (pointer to player struct)
-	players     map[string]*Player
-	mu          sync.RWMutex
-	cmdRegistry *CommandRegistry
+	players         map[string]*Player
+	mu              sync.RWMutex
+	cmdRegistry     *CommandRegistry
+	playerLocations map[string]string
+	world           *GameWorld
+	// worldFile       string
 }
 
 // constructor, create a server instance
 // mutex has a zero value and is already usable
 // we use a struct literal, no malloc is needed
-func NewServer() *Server {
+
+func NewServer(worldFile string) (*Server, error) {
+	world, err := parsing(worldFile)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load world: %w", err)
+	}
 	s := &Server{
 		players: make(map[string]*Player),
+		world:   &world,
+		// wordFile: worldFile,
 	}
 	s.cmdRegistry = NewCommandRegistry(s)
-	return s
+	// NOTE: could add some logging about loading success
+	return s, nil
 }
 
 func (s *Server) handleCommand(player *Player, line string) {
@@ -99,8 +112,11 @@ func (s *Server) handleCommand(player *Player, line string) {
 }
 
 func main() {
-	server := NewServer()
-
+	server, err := NewServer("../data.json")
+	if err != nil {
+		log.Println("Failed to initialize the server: ", err)
+		os.Exit(1)
+	}
 	listener, err := net.Listen("tcp", ":8090")
 	if err != nil {
 		log.Fatal("Error listening:", err)
@@ -108,7 +124,6 @@ func main() {
 	defer listener.Close()
 	// NOTE: change print to a dynamic value
 	log.Println("TAP Server starting on :8090")
-
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
@@ -174,6 +189,10 @@ func (s *Server) handleConnect(player *Player, username string) {
 	// registration
 	player.Username = username
 	player.State = Authenticated
+	player.CurrentRoom = "start"
+	//player.Inventory
+	//player.HP = 100
+
 	s.players[username] = player
 
 	s.sendResponse(player, "OK connected")
