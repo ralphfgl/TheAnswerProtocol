@@ -11,21 +11,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-
-  const roomdata = {
-    "id": "shop",
-    "name": "General Store",
-    "description": "Shelves lined with various goods and supplies.",
-    "exits": {
-      "west": "start"
-    },
-    "spawns": [
-      {
-        "npc_type": "merchant",
-        "count": 1
-      },
-    ]
-  }
+  const [roomData, setRoomData] = useState([])
 
   const headerdata =
   {
@@ -33,6 +19,18 @@ function App() {
     "health": 100,
     "players": 10,
     "players_room": 2
+  }
+
+  const parseMessage = (message) => {
+    if (message.startsWith("OK connected")) {
+      setIsAuthenticated(true)
+    }
+    else if (message.startsWith("{")) {
+      const data = JSON.parse(message)
+      if (data.type == "room") {
+        setRoomData(data)
+      }
+    }
   }
 
   useEffect(() => {
@@ -86,12 +84,6 @@ function App() {
     wsRef.current.send(command)
   }
 
-  const parseMessage = (message) => {
-    if (message.startsWith("OK connected")) {
-      setIsAuthenticated(true)
-    }
-  }
-
   const submitLogin = (e) => {
     e.preventDefault()
     wsRef.current.send("CONNECT " + nickname)
@@ -105,7 +97,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <form className='login_form' onSubmit={(event) => submitLogin(event)}>
-        <input className='login_input' type="text" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        <input className='login_input' required type="text" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
         <button className='login_button'>Apply</button>
       </form>
     )
@@ -118,7 +110,7 @@ function App() {
         <Header data={headerdata} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel />
-          <RoomView data={roomdata} onCommand={sendCommand} />
+          <RoomView data={roomData} onCommand={sendCommand} />
           <ActionPanel />
         </div>
         <form onSubmit={sendMessage}>
