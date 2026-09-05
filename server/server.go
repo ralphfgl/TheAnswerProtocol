@@ -72,6 +72,7 @@ func (s *Server) handleCommand(player *Player, line string) {
 	cmd, exists := s.cmdRegistry.commands[commandName]
 	if !exists {
 		s.sendError(player, 400, fmt.Sprintf("UNKNOWN_COMMAND: %s", commandName))
+		return
 	}
 	if len(args) < cmd.MinArgs {
 		s.sendError(player, 400, fmt.Sprintf("TOO_FEW_ARGS: Need at least %d arguments", cmd.MinArgs))
@@ -182,7 +183,7 @@ func (s *Server) handleConnect(player *Player, username string) {
 	s.players[username] = player
 
 	s.sendResponse(player, "OK connected")
-	s.sendResponse(player, jsonTest)
+	//s.sendResponse(player, jsonTest)
 	// NOTE: add IP and maybe format the timestamp
 	log.Printf("Player %s connected", username)
 }

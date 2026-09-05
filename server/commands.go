@@ -132,7 +132,7 @@ func (s *Server) handleLook(p *Player) error {
 		}
 		response += fmt.Sprintf(`"%s"`, spawn.NpcType)
 	}
-	response += `]}`
-	s.sendResponse(p, "OK"+response)
+	response += `]}}`
+	s.sendResponse(p, "OK "+ response)
 	return nil
 }

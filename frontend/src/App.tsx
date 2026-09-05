@@ -11,7 +11,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-  const [roomData, setRoomData] = useState([])
+  const [roomData, setRoomData] = useState({})
 
   const headerdata =
   {
@@ -24,10 +24,12 @@ function App() {
   const parseMessage = (message) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
+      wsRef.current.send("LOOK")
     }
-    else if (message.startsWith("{")) {
-      const data = JSON.parse(message)
-      if (data.type == "room") {
+    else if (message.startsWith("OK {")) {
+      console.log(message.substring(3))
+      const data = JSON.parse(message.substring(3))
+      if (data.room) {
         setRoomData(data)
       }
     }
