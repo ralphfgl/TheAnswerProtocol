@@ -88,8 +88,8 @@ func (s *Server) handleLook(p *Player) error {
 		room = "start"
 	}
 	var currentRoom *Location
-	for i, room := range s.world.World.Locations {
-		if s.world.World.Locations[i].Id == room {
+	for i, location := range s.world.World.Locations {
+		if location.Id == room {
 			currentRoom = &s.world.World.Locations[i]
 			break
 		}
