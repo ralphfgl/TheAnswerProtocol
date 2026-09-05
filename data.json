@@ -4,41 +4,124 @@
       {
         "id": "start",
         "name": "Village Square",
-        "description": "A bustling square with cobblestone paths.",
+        "description": "A bustling square with cobblestone paths, a central stone fountain, and lively townsfolk.",
         "exits": {
           "north": "tavern",
-          "east": "shop"
+          "west": "shop",
+          "south": "armory"
         },
         "spawns": [
           {
             "npc_type": "guard",
             "count": 1
           }
-        ]
+        ],
+        "items": []
       },
       {
         "id": "tavern",
         "name": "The Prancing Pony",
-        "description": "A cozy tavern filled with warmth and laughter.",
+        "description": "A cozy tavern filled with warmth, the aroma of roasted stew, and friendly banter.",
         "exits": {
-          "south": "start"
+          "south": "start",
+          "east": "cellar"
         },
+        "spawns": [],
         "items": [
           "ale"
         ]
       },
       {
+        "id": "cellar",
+        "name": "Tavern Cellar",
+        "description": "A cool, shadowy cellar stacked high with dusty barrels and gnawed grain sacks.",
+        "exits": {
+          "west": "tavern",
+          "north": "catacombs"
+        },
+        "spawns": [
+          {
+            "npc_type": "giant_rat",
+            "count": 1
+          }
+        ],
+        "items": [
+          "old_lantern"
+        ]
+      },
+      {
+        "id": "catacombs",
+        "name": "Ancient Catacombs",
+        "description": "Chilly subterranean passages carved into the bedrock, lined with old stone arches.",
+        "exits": {
+          "south": "cellar",
+          "west": "woods",
+          "north": "crypt"
+        },
+        "spawns": [],
+        "items": []
+      },
+      {
+        "id": "crypt",
+        "name": "Forgotten Crypt",
+        "description": "A cold, quiet burial chamber housing the stone sarcophagus of an ancient knight.",
+        "exits": {
+          "south": "catacombs"
+        },
+        "spawns": [
+          {
+            "npc_type": "skeleton",
+            "count": 1
+          }
+        ],
+        "items": [
+          "silver_amulet"
+        ]
+      },
+      {
+        "id": "woods",
+        "name": "Whispering Woods",
+        "description": "A quiet forest path sheltered by tall pines. Golden sunlight filters through the needles.",
+        "exits": {
+          "east": "catacombs",
+          "south": "shop"
+        },
+        "spawns": [],
+        "items": [
+          "healing_herbs"
+        ]
+      },
+      {
         "id": "shop",
         "name": "General Store",
-        "description": "Shelves lined with various goods and supplies.",
+        "description": "Shelves packed with adventuring gear, provisions, and curiosities from distant lands.",
         "exits": {
-          "west": "start"
+          "north": "woods",
+          "east": "start"
         },
         "spawns": [
           {
             "npc_type": "merchant",
             "count": 1
           }
+        ],
+        "items": []
+      },
+      {
+        "id": "armory",
+        "name": "Blacksmith & Armory",
+        "description": "The rhythmic clang of an anvil rings out near racks of freshly forged blades and armor.",
+        "exits": {
+          "north": "start"
+        },
+        "spawns": [
+          {
+            "npc_type": "blacksmith",
+            "count": 1
+          }
+        ],
+        "items": [
+          "iron_sword"
         ]
       }
     ],
@@ -46,7 +129,31 @@
       {
         "id": "ale",
         "name": "Frothy Ale",
-        "description": "A refreshing drink that restores energy.",
+        "description": "A refreshing mug of tavern ale that restores 15 health.",
+        "obtainable": true
+      },
+      {
+        "id": "iron_sword",
+        "name": "Iron Sword",
+        "description": "A sharp iron blade forged by Blacksmith Torin.",
+        "obtainable": true
+      },
+      {
+        "id": "healing_herbs",
+        "name": "Healing Herbs",
+        "description": "Fragrant wild herbs known for their soothing and medicinal qualities.",
+        "obtainable": true
+      },
+      {
+        "id": "old_lantern",
+        "name": "Old Lantern",
+        "description": "A sturdy brass oil lantern that illuminates dark passages.",
+        "obtainable": true
+      },
+      {
+        "id": "silver_amulet",
+        "name": "Silver Amulet",
+        "description": "An engraved heirloom amulet belonging to Blacksmith Torin's family.",
         "obtainable": true
       }
     ],
@@ -54,25 +161,110 @@
       {
         "id": "guard",
         "name": "Village Guard",
-        "description": "A stern-looking guard watching over the square.",
+        "role": "dialogue",
+        "description": "A vigilant guard in polished chainmail watching over the square.",
         "dialogue": [
-          "Stay safe, traveler.",
-          "The roads can be dangerous."
+          "Stay safe, traveler. Keep your weapons sheathed in town.",
+          "Check the armory to the south if you need a sturdy blade.",
+          "Beware the tavern cellar—rats have been seen scurrying down there."
         ],
         "stats": {
-          "hp": 20
-        }
+          "hp": 50,
+          "attack": 12,
+          "defense": 5
+        },
+        "hostile": false
       },
       {
         "id": "merchant",
         "name": "Shop Keeper",
-        "description": "A friendly merchant eager to trade.",
+        "role": "trader",
+        "description": "A cheerful merchant eager to trade goods with passing adventurers.",
         "dialogue": [
-          "Welcome to my shop!",
-          "What can I get for you today?"
+          "Welcome to the General Store!",
+          "Need supplies for your journey?",
+          "I buy rare curiosities if you find any in the catacombs."
         ],
         "stats": {
-          "hp": 15
+          "hp": 25,
+          "attack": 5,
+          "defense": 2
+        },
+        "hostile": false
+      },
+      {
+        "id": "blacksmith",
+        "name": "Blacksmith Torin",
+        "role": "quest-giver",
+        "description": "A muscular dwarf covered in soot, shaping steel at his forge.",
+        "dialogue": [
+          "Need steel? I forge the finest blades around.",
+          "My family's silver amulet was lost in the crypt beyond the catacombs.",
+          "Bring it back to me, and I'll reward you with an iron sword!"
+        ],
+        "stats": {
+          "hp": 60,
+          "attack": 16,
+          "defense": 6
+        },
+        "hostile": false
+      },
+      {
+        "id": "giant_rat",
+        "name": "Giant Cellar Rat",
+        "role": "enemy",
+        "description": "A snarling rodent the size of a hound with sharp yellow incisors.",
+        "dialogue": [
+          "*Hisses aggressively and bares its teeth!*"
+        ],
+        "stats": {
+          "hp": 15,
+          "attack": 6,
+          "defense": 1
+        },
+        "hostile": true
+      },
+      {
+        "id": "skeleton",
+        "name": "Crypt Skeleton",
+        "role": "enemy",
+        "description": "An ancient reanimated skeleton clutching a rusted spear.",
+        "dialogue": [
+          "*Bones clatter ominously as faint blue embers burn in its eye sockets.*"
+        ],
+        "stats": {
+          "hp": 35,
+          "attack": 12,
+          "defense": 4
+        },
+        "hostile": true
+      }
+    ],
+    "quests": [
+      {
+        "id": "lost_amulet",
+        "title": "The Blacksmith's Heirloom",
+        "giver": "blacksmith",
+        "type": "fetch_item",
+        "target_item": "silver_amulet",
+        "description": "Retrieve Blacksmith Torin's lost silver amulet from the Forgotten Crypt.",
+        "reward": {
+          "xp": 50,
+          "reward_item": "iron_sword",
+          "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!"
+        }
+      },
+      {
+        "id": "clear_cellar",
+        "title": "Cellar Trouble",
+        "giver": "guard",
+        "type": "defeat_npc",
+        "target_npc": "giant_rat",
+        "description": "Clear the Giant Cellar Rat from the tavern cellar to secure the village supplies.",
+        "reward": {
+          "xp": 30,
+          "reward_item": "ale",
+          "dialogue_complete": "Well done! The tavern cellar is safe again. Have a drink on us!"
         }
       }
     ]

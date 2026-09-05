@@ -6,12 +6,14 @@ import RoomView from './RoomView/RoomView'
 import ActionPanel from './ActionPanel/ActionPanel'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
   const [nickname, setNickname] = useState("")
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
+  const jsonTest = {"type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": {"west": "start"}, "spawns": [{"npc_type": "merchant", "count": 1}, {"npc_type": "TEST", "count": 2}]}
   const [roomData, setRoomData] = useState({})
+  setRoomData(jsonTest)
 
   const headerdata =
   {
@@ -24,14 +26,14 @@ function App() {
   const parseMessage = (message) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
-      wsRef.current.send("LOOK")
+      //wsRef.current.send("LOOK")
     }
     else if (message.startsWith("OK {")) {
       console.log(message.substring(3))
-      const data = JSON.parse(message.substring(3))
-      if (data.room) {
-        setRoomData(data)
-      }
+      // const data = JSON.parse(message.substring(3))
+      // if (data.room) {
+      //   setRoomData(data)
+      // }
     }
   }
 
@@ -111,7 +113,7 @@ function App() {
         <h1 className='title'>The answer Protocol</h1>
         <Header data={headerdata} onLogout={handleLogout} />
         <div className='panel_list'>
-          <ChatPanel />
+          <ChatPanel onCommand={sendCommand} />
           <RoomView data={roomData} onCommand={sendCommand} />
           <ActionPanel />
         </div>

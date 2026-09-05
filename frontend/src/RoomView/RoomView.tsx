@@ -18,8 +18,8 @@ function RoomView({ data, onCommand }) {
             {data.spawns.map((value, index) => (
                 <div key={index}>
                     <p>{value.npc_type}</p>
-                    <button>Talk</button>
-                    <button>Attack</button>
+                    <button onClick={() => onCommand("TALK " + value.npc_type)}>Talk</button>
+                    <button onClick={() => onCommand("ATTACK " + value.npc_type)}>Attack</button>
                 </div>
             ))}
             <hr />
