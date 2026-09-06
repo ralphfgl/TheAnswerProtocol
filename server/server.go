@@ -31,6 +31,9 @@ type Player struct {
 	CurrentRoom string
 	GroupID     string
 	Inventory   []string
+	Attack      int
+	HP          int
+	MaxHP       int
 }
 
 type Server struct {
