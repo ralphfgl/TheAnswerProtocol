@@ -1,6 +1,11 @@
 .action_panel{
-    background-color: rgb(4, 162, 248);
+    background-color: #FEFAE0;
     padding: 10px;
     border-radius: 20px;
     width: 400px;
+    border: 2px solid #D4CCA5;
+}
+
+.action_title{
+    font-weight: 600;
 }

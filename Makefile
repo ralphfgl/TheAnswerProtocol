@@ -1,9 +1,9 @@
 install:
 	cd frontend && npm install
 run-server:
-	cd server && go run server.go
+	cd server && go run server.go parsing.go commands.go
 run-client:
-	cd cli && go run main.go 
+	cd cli-client && go run main.go 
 run-client-gui:
 	cd frontend && npm run dev
 run-proxy:

@@ -1,6 +1,7 @@
 .title{
   font-size: 50px;
   text-align: center;
+  font-weight: 800;
 }
 
 .messages{
@@ -40,7 +41,7 @@
   padding: 0px 30px;
   height: 49px;
   border: 0;
-  background-color: #feea00
+  background-color: #feea00;
 }
 
 .login_button:hover{

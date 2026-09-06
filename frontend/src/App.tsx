@@ -11,7 +11,8 @@ function App() {
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-  const [roomData, setRoomData] = useState([])
+  const jsonTest = { "type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": { "west": "start" }, "spawns": [{ "npc_type": "merchant", "count": 1 }, { "npc_type": "TEST", "count": 2 }] }
+  const [roomData, setRoomData] = useState(jsonTest)
 
   const headerdata =
   {
@@ -24,12 +25,17 @@ function App() {
   const parseMessage = (message) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
+      //wsRef.current.send("LOOK")
     }
-    else if (message.startsWith("{")) {
-      const data = JSON.parse(message)
-      if (data.type == "room") {
-        setRoomData(data)
-      }
+    else if (message.startsWith("OK {")) {
+      console.log(message.substring(3))
+      // const data = JSON.parse(message.substring(3))
+      // if (data.room) {
+      //   setRoomData(data)
+      // }
+    }
+    else if (message.startsWith("ERR")) {
+      console.error(message.substring(3))
     }
   }
 
@@ -90,6 +96,7 @@ function App() {
   }
 
   const handleLogout = () => {
+    // wsRef.current.send("QUIT")
     setIsAuthenticated(false)
     setNickname("")
   }
@@ -106,10 +113,10 @@ function App() {
   return (
     <>
       <main className='main'>
-        <h1 className='title'>The answer Protocol</h1>
+        <h1 className='title'>The Answer Protocol</h1>
         <Header data={headerdata} onLogout={handleLogout} />
         <div className='panel_list'>
-          <ChatPanel />
+          <ChatPanel onCommand={sendCommand} />
           <RoomView data={roomData} onCommand={sendCommand} />
           <ActionPanel />
         </div>
