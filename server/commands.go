@@ -188,4 +188,14 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleDrop(p, strings.Join(args, " "))
 		},
 	}
+	// talk
+
+	// attack
+
+	//status
+
+	// quest
+
+	//quests
+
 }
