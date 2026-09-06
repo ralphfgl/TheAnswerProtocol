@@ -183,7 +183,6 @@ func (s *Server) handleConnect(player *Player, username string) {
 	s.players[username] = player
 
 	s.sendResponse(player, "OK connected")
-	//s.sendResponse(player, jsonTest)
 	// NOTE: add IP and maybe format the timestamp
 	log.Printf("Player %s connected", username)
 }
