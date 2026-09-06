@@ -128,4 +128,64 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleWho(p)
 		},
 	}
+	cr.commands["GROUP"] = &Command{
+		Name:         "GROUP",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("GROUP need a subcommand (CREATE, INVITE, JOIN, LEAVE)")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleGroup(p, args)
+		},
+	}
+	cr.commands["TAKE"] = &Command{
+		Name:         "TAKE",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("TAKE needs an item ID")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleTake(p, strings.Join(args, " "))
+		},
+	}
+	cr.commands["INVENTORY"] = &Command{
+		Name:         "INVENTORY",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("INVENTORY takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleInventory(p)
+		},
+	}
+	cr.commands["DROP"] = &Command{
+		Name:         "DROP",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("DROP needs an item ID")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleDrop(p, strings.Join(args, " "))
+		},
+	}
 }

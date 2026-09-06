@@ -10,8 +10,6 @@ import (
 	"sync"
 )
 
-const jsonTest = `{"type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": {"west": "start"}, "spawns": [{"npc_type": "merchant", "count": 1}, {"npc_type": "TEST", "count": 2}]}`
-
 type ConnectionState int
 
 // type and expression is inherited from previous line
@@ -32,6 +30,7 @@ type Player struct {
 	Writer      *bufio.Writer
 	CurrentRoom string
 	GroupID     string
+	Inventory   []string
 }
 
 type Server struct {
@@ -41,7 +40,7 @@ type Server struct {
 	playerLocations map[string]string
 	world           *GameWorld
 	groups          map[string][]string // each key a string, each value a slice
-
+	nextGroupID     int
 }
 
 // constructor, create a server instance
@@ -55,8 +54,8 @@ func NewServer(worldFile string) (*Server, error) {
 	}
 	s := &Server{
 		players: make(map[string]*Player),
+		groups:  make(map[string][]string),
 		world:   &world,
-		// wordFile: worldFile,
 	}
 	s.cmdRegistry = NewCommandRegistry(s)
 	// NOTE: could add some logging about loading success
@@ -152,47 +151,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 		// NOTE: add parsing of the command here before handling
 		s.handleCommand(player, line)
 	}
-}
-
-func (s *Server) handleConnect(player *Player, username string) {
-	// NOTE: we handle the state issue as a 400 error, even if not present in the RFC
-	if player.State != Connected {
-		s.sendError(player, 400, "INVALID_STATE")
-		return
-	}
-	username = strings.TrimSpace(username)
-	if username == "" {
-		s.sendError(player, 400, "USERNAME_REQUIRED")
-		return
-	}
-	// check if username in use
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	// map lookup in go returns 2 value, the actual value and a boolean hat tell if the key exist
-	// comma separate the assignement from the condition
-	if _, exists := s.players[username]; exists {
-		s.sendError(player, 201, "NAME_IN_USE")
-		return
-	}
-	// registration
-	player.Username = username
-	player.State = Authenticated
-	player.CurrentRoom = "start"
-	//player.Inventory
-	//player.HP = 100
-
-	s.players[username] = player
-
-	s.sendResponse(player, "OK connected")
-	// NOTE: add IP and maybe format the timestamp
-	log.Printf("Player %s connected", username)
-}
-
-func (s *Server) handleQuit(player *Player) {
-	s.sendResponse(player, "OK goodbye")
-	log.Printf("Player %s quit", player.Username)
-	// NOTE: the defer will clean up, this is redundunt
-	player.Conn.Close()
 }
 
 // NOTE: general sendResponse and then wrapper for error, event

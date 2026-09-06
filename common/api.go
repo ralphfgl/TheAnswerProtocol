@@ -19,14 +19,20 @@ type LookResponse struct {
 
 // Future API types can go here
 type InventoryInfo struct {
-	Items       []string `json:"items"`
-	Gold        int      `json:"gold"`
-	MaxCapacity int      `json:"max_capacity"`
+	Items []string `json:"items"`
 }
 
 type StatusInfo struct {
-	HP         int `json:"hp"`
-	MaxHP      int `json:"max_hp"`
-	Level      int `json:"level"`
-	Experience int `json:"experience"`
+	HP    int `json:"hp"`
+	MaxHP int `json:"max_hp"`
+	// NOTE: look a enum in combat.go
+	// status need to be defined
+	Status int
+}
+
+// NOTE: for example purpose
+type CombatResponse struct {
+	AttackerHP int `json:"attacker_hp"`
+	TargetHP   int `json:"target_hp"`
+	Damage     int `json:"npc_damage,omitempty`
 }
