@@ -1,8 +1,24 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
 :root {
-  background-color: #fefadc;
+  background-color: #F3EED9;
+  color: #000000;
+
   @media (max-width: 1024px) {
     font-size: 16px;
   }
+}
+
+h1, h2, h3{
+  margin: 10px 0px;
+}
+
+* {
+  font-family: "Roboto", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+  box-sizing: border-box;
 }
 
 body {
