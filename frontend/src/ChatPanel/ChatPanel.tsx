@@ -13,22 +13,18 @@ function ChatPanel({ onCommand }) {
     }
     return (
         <section className='chat_panel'>
-            <h2>Communication and logs</h2>
+            <h2 className='chat_title'>Communication and logs</h2>
             <div className='tabs'>
                 {tabs.map((value, index) => (
                     <button className='tab_button' key={index} onClick={() => setActiveTab(value.toUpperCase())}>{value}</button>
                 ))}
             </div>
             <hr />
-            <p>Logs</p>
-            <p>Logs</p>
-            <p>Logs</p>
-            <p>Logs</p>
-            <p>Logs</p>
+            <p>Logs:</p>
             <hr />
-            <form onSubmit={(event) => submitMessage(event)}>
-                <input value={message} onChange={(e) => setMessage(e.target.value)} type="text" placeholder='Chat...' />
-                <button>Send</button>
+            <form className='chat_form' onSubmit={(event) => submitMessage(event)}>
+                <input className='chat_input' value={message} onChange={(e) => setMessage(e.target.value)} type="text" placeholder='Chat...' />
+                <button className='tab_button'>Send</button>
             </form>
         </section>
     )

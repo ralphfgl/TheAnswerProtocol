@@ -6,14 +6,13 @@ import RoomView from './RoomView/RoomView'
 import ActionPanel from './ActionPanel/ActionPanel'
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [nickname, setNickname] = useState("")
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-  const jsonTest = {"type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": {"west": "start"}, "spawns": [{"npc_type": "merchant", "count": 1}, {"npc_type": "TEST", "count": 2}]}
-  const [roomData, setRoomData] = useState({})
-  setRoomData(jsonTest)
+  const jsonTest = { "type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": { "west": "start" }, "spawns": [{ "npc_type": "merchant", "count": 1 }, { "npc_type": "TEST", "count": 2 }] }
+  const [roomData, setRoomData] = useState(jsonTest)
 
   const headerdata =
   {
@@ -34,6 +33,9 @@ function App() {
       // if (data.room) {
       //   setRoomData(data)
       // }
+    }
+    else if (message.startsWith("ERR")) {
+      console.error(message.substring(3))
     }
   }
 
@@ -94,6 +96,7 @@ function App() {
   }
 
   const handleLogout = () => {
+    // wsRef.current.send("QUIT")
     setIsAuthenticated(false)
     setNickname("")
   }
@@ -110,7 +113,7 @@ function App() {
   return (
     <>
       <main className='main'>
-        <h1 className='title'>The answer Protocol</h1>
+        <h1 className='title'>The Answer Protocol</h1>
         <Header data={headerdata} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} />

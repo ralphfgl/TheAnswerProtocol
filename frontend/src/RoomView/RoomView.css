@@ -1,6 +1,43 @@
+.room_title{
+    font-weight: 600;
+}
+
 .room_view{
-    background-color: rgb(29, 216, 98);
+    background-color: #FEFAE0;
     padding: 10px;
     border-radius: 20px;
     width: 400px;
+    border: 2px solid #D4CCA5;
+}
+
+.room_actions{
+    display: flex;
+    gap: 5px;
+}
+
+.room_button{
+    font-size: 16px;
+    border: 0px;
+    border-radius: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(255, 255, 255);
+    background-color: #BC6C25;
+}
+
+.room_button:hover{
+    background-color: #DDA15E;
+    transition: 0.5s;
+}
+
+.room_form{
+    display: flex;
+    gap: 5px;
+}
+
+.room_input{
+    border: 1px solid #D4CCA5;
+    border-radius: 20px;
+    padding: 10px;
+    width: 80%;
 }
