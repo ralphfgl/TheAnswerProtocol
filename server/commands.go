@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"the_answer_protocol/common"
 )
 
 type Command struct {
@@ -81,19 +83,21 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 	// and so on
 }
 
-// Handler implementation
 func (s *Server) handleLook(p *Player) error {
 	room := p.CurrentRoom
 	if room == "" {
 		room = "start"
 	}
-	var currentRoom *Location
+	var currentLocation *Location
 	for i, location := range s.world.World.Locations {
 		if location.Id == room {
-			currentRoom = &s.world.World.Locations[i]
+			currentLocation = &s.world.World.Locations[i]
 			break
 		}
 	}
+	// if currentLocation == nil {
+	// 	return fmt.Errorf("room not found: %s", room)
+	// }
 	var playersInRoom []string
 	s.mu.RLock()
 	for _, player := range s.players {
@@ -102,37 +106,50 @@ func (s *Server) handleLook(p *Player) error {
 		}
 	}
 	s.mu.RUnlock()
-	response := fmt.Sprintf(`{"room":{"id":"%s","name":"%s","description":"%s","exits":{`,
-		currentRoom.Id, currentRoom.Name, currentRoom.Description)
-	first := true
-	for dir, target := range currentRoom.Exits {
-		if !first {
-			response += ","
+	var itemIDs []string
+	for _, itemID := range currentLocation.Items {
+		// Verify item exists
+		found := false
+		for _, item := range s.world.World.Items {
+			if item.Id == itemID {
+				found = true
+				break
+			}
 		}
-		response += fmt.Sprintf(`"%s":"%s"`, dir, target)
-		first = false
-	}
-	response += `},"players":[`
-	for i, name := range playersInRoom {
-		if i > 0 {
-			response += ","
+		if found {
+			itemIDs = append(itemIDs, itemID) // Send ID, not name
 		}
-		response += fmt.Sprintf(`"%s"`, name)
 	}
-	for i, item := range currentRoom.Items {
-		if i > 0 {
-			response += ","
+	var npcIDs []string
+	for _, spawn := range currentLocation.Spawns {
+		// Verify NPC exists
+		found := false
+		for _, npc := range s.world.World.NPCs {
+			if npc.Id == spawn.NpcType {
+				found = true
+				break
+			}
 		}
-		response += fmt.Sprintf(`"%s"`, item)
-	}
-	response += `], "npcs":[`
-	for i, spawn := range currentRoom.Spawns {
-		if i > 0 {
-			response += ","
+		if found {
+			npcIDs = append(npcIDs, spawn.NpcType) // Send ID, not name
 		}
-		response += fmt.Sprintf(`"%s"`, spawn.NpcType)
 	}
-	response += `]}`
-	s.sendResponse(p, "OK"+response)
+	roomInfo := common.RoomInfo{
+		Id:          currentLocation.Id,
+		Name:        currentLocation.Name,
+		Description: currentLocation.Description,
+		Exits:       currentLocation.Exits,
+	}
+	response := common.LookResponse{
+		Room:    roomInfo,
+		Players: playersInRoom,
+		Items:   itemIDs,
+		NPCs:    npcIDs,
+	}
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	s.sendResponse(p, "OK"+string(jsonData))
 	return nil
 }

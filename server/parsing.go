@@ -7,42 +7,42 @@ import (
 )
 
 type GameWorld struct {
-	World World
+	World World `json:"world"`
 }
 
 type World struct {
-	Locations []Location
-	Items     []Item
-	NPCs      []NPC
-}
-
-type Spawn struct {
-	NpcType string
-	Count   int
+	Locations []Location `json:"locations"`
+	Items     []Item     `json:"items"`
+	NPCs      []NPC      `json:"npcs"`
 }
 
 type Location struct {
-	Id          string
-	Name        string
-	Description string
-	Exits       map[string]string
-	Spawns      []Spawn
-	Items       []string
+	Id          string            `json:"id"`
+	Name        string            `json:"name"`
+	Description string            `json:"description"`
+	Exits       map[string]string `json:"exits"`
+	Spawns      []Spawn           `json:"spawns,omitempty"`
+	Items       []string          `json:"items,omitempty"`
+}
+
+type Spawn struct {
+	NpcType string `json:"npc_type"`
+	Count   int    `json:"count"`
 }
 
 type Item struct {
-	Id          string
-	Name        string
-	Description string
-	Obtainable  bool
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Obtainable  bool   `json:"obtainable"`
 }
 
 type NPC struct {
-	Id          string
-	Name        string
-	Description string
-	Dialogue    []string
-	Stats       map[string]int
+	Id          string         `json:"id"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Dialogue    []string       `json:"dialogue"`
+	Stats       map[string]int `json:"stats"`
 }
 
 func parsing(fileName string) (GameWorld, error) {

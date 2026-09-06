@@ -86,6 +86,7 @@ func (s *Server) handleCommand(player *Player, line string) {
 	cmd, exists := s.cmdRegistry.commands[commandName]
 	if !exists {
 		s.sendError(player, 400, fmt.Sprintf("UNKNOWN_COMMAND: %s", commandName))
+		return
 	}
 	if len(args) < cmd.MinArgs {
 		s.sendError(player, 400, fmt.Sprintf("TOO_FEW_ARGS: Need at least %d arguments", cmd.MinArgs))
