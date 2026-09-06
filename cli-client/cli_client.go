@@ -52,7 +52,6 @@ func (c *CLIClient) Send(command string) error {
 	return err
 }
 
-// read line from the server
 func (c *CLIClient) Read() (string, error) {
 	return c.reader.ReadString('\n')
 }
