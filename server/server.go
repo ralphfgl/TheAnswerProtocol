@@ -31,16 +31,17 @@ type Player struct {
 	// bufio.Writer add a buffer on top of an underlying io.Writer
 	Writer      *bufio.Writer
 	CurrentRoom string
+	GroupID     string
 }
 
 type Server struct {
-	// declare a map with string keys and value of *Player type (pointer to player struct)
 	players         map[string]*Player
-	mu              sync.RWMutex
+	Mu              sync.RWMutex
 	cmdRegistry     *CommandRegistry
 	playerLocations map[string]string
 	world           *GameWorld
-	// worldFile       string
+	groups          map[string][]string // each key a string, each value a slice
+
 }
 
 // constructor, create a server instance
@@ -165,8 +166,8 @@ func (s *Server) handleConnect(player *Player, username string) {
 		return
 	}
 	// check if username in use
-	s.mu.Lock()
-	defer s.mu.Unlock()
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
 	// map lookup in go returns 2 value, the actual value and a boolean hat tell if the key exist
 	// comma separate the assignement from the condition
 	if _, exists := s.players[username]; exists {
@@ -212,9 +213,9 @@ func (s *Server) sendError(player *Player, code int, message string) {
 
 func (s *Server) removePlayer(player *Player) {
 	if player.Username != "" {
-		s.mu.Lock()
+		s.Mu.Lock()
 		delete(s.players, player.Username)
-		s.mu.Unlock()
+		s.Mu.Unlock()
 		// NOTE: add timestamp and ip address
 		log.Printf("Player %s removed", player.Username)
 	}

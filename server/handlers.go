@@ -19,13 +19,13 @@ func (s *Server) handleLook(p *Player) error {
 		}
 	}
 	var playersInRoom []string
-	s.mu.RLock()
+	s.Mu.RLock()
 	for _, player := range s.players {
 		if player.CurrentRoom == room && player.Username != p.Username {
 			playersInRoom = append(playersInRoom, player.Username)
 		}
 	}
-	s.mu.RUnlock()
+	s.Mu.RUnlock()
 	var itemIDs []string
 	for _, itemID := range currentLocation.Items {
 		found := false
@@ -86,12 +86,36 @@ func (s *Server) handleMove(p *Player, direction string) error {
 		return fmt.Errorf("no exit in direction: %s", direction)
 	}
 	oldRoom := p.CurrentRoom
-	s.mu.Lock()
+	s.Mu.Lock()
 	p.CurrentRoom = targetRoomID
-	s.mu.Unlock()
+	s.Mu.Unlock()
 	// NOTE: verify the ABNF
 	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
 	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
 	s.handleLook(p)
+	return nil
+}
+
+func (s *Server) handleChat(p *Player, scope string, message string) error {
+	event := fmt.Sprintf("EVT %s CHAT %s %s", scope, p.Username, message)
+	switch scope {
+	case "GLOBAL":
+		s.broadcastAll(event)
+	case "ROOM":
+		s.broadcastRoomEvent(p.CurrentRoom, event)
+	case "GROUP":
+		if p.GroupID == "" {
+			return fmt.Errorf("not in a group")
+		}
+		s.broadcastGroupEvent(p.GroupID, event)
+	}
+	s.sendResponse(p, "OK")
+	return nil
+}
+
+func (s *Server) handleWho(p *Player) error {
+	s.Mu.RLock()
+	defer s.Mu.RUnlock()
+	s.sendResponse(p, fmt.Sprintf("OK players=%d", len(s.players)))
 	return nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Command struct {
@@ -90,5 +91,41 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleMove(p, args[0])
 		},
 	}
-	// and so on
+	cr.commands["CHAT"] = &Command{
+		Name:         "CHAT",
+		MinArgs:      2,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 2 {
+				return fmt.Errorf("CHAT needs a scope and a message")
+			}
+			scope := args[0]
+			if scope != "GLOBAL" && scope != "ROOM" && scope != "GROUP" {
+				return fmt.Errorf("invalid scope: %s (use GLOBAL, ROOM or GROUP)", scope)
+			}
+			return nil
+		},
+		// NOTE: return directly scope and message
+		Handler: func(p *Player, args []string) error {
+			scope := args[0]
+			message := strings.Join(args[1:], " ")
+			return s.handleChat(p, scope, message)
+		},
+	}
+	cr.commands["WHO"] = &Command{
+		Name:         "WHO",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("WHO takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleWho(p)
+		},
+	}
 }
