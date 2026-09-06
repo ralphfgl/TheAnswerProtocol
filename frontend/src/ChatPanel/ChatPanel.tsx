@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import './ChatPanel.css'
 
-function ChatPanel({ onCommand }) {
+function ChatPanel({ onCommand, messages }) {
     const tabs = ["Global", "Room", "Group", "System log"]
     const [message, setMessage] = useState("")
     const [activeTab, setActiveTab] = useState("GLOBAL")
@@ -21,6 +21,11 @@ function ChatPanel({ onCommand }) {
             </div>
             <hr />
             <p>Logs:</p>
+            <div className='chat_logs'>
+                {messages.map((value, index) => (
+                    <p key={index}>{value}</p>
+                ))}
+            </div>
             <hr />
             <form className='chat_form' onSubmit={(event) => submitMessage(event)}>
                 <input className='chat_input' value={message} onChange={(e) => setMessage(e.target.value)} type="text" placeholder='Chat...' />

@@ -28,6 +28,11 @@
     width: 80%;
 }
 
+.chat_logs{
+    height: 300px;
+    overflow-y: auto;
+}
+
 .tab_button{
     font-size: 16px;
     border: 0px;

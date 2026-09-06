@@ -15,6 +15,11 @@
     gap: 5px;
 }
 
+.room_buttons{
+    display: flex;
+    gap: 5px;
+}
+
 .room_button{
     font-size: 16px;
     border: 0px;

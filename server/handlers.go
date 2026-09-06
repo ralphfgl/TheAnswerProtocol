@@ -69,6 +69,6 @@ func (s *Server) handleLook(p *Player) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	s.sendResponse(p, "OK"+string(jsonData))
+	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }

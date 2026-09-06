@@ -11,8 +11,7 @@ function App() {
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-  const jsonTest = { "type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": { "west": "start" }, "spawns": [{ "npc_type": "merchant", "count": 1 }, { "npc_type": "TEST", "count": 2 }] }
-  const [roomData, setRoomData] = useState(jsonTest)
+  const [roomData, setRoomData] = useState({})
 
   const headerdata =
   {
@@ -25,14 +24,14 @@ function App() {
   const parseMessage = (message) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
-      //wsRef.current.send("LOOK")
+      wsRef.current.send("LOOK")
     }
     else if (message.startsWith("OK {")) {
-      console.log(message.substring(3))
-      // const data = JSON.parse(message.substring(3))
-      // if (data.room) {
-      //   setRoomData(data)
-      // }
+      const data = JSON.parse(message.substring(3))
+      console.log(data)
+      if (data.room) {
+        setRoomData(data)
+      }
     }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
@@ -96,7 +95,7 @@ function App() {
   }
 
   const handleLogout = () => {
-    // wsRef.current.send("QUIT")
+    wsRef.current.send("QUIT")
     setIsAuthenticated(false)
     setNickname("")
   }
@@ -116,17 +115,17 @@ function App() {
         <h1 className='title'>The Answer Protocol</h1>
         <Header data={headerdata} onLogout={handleLogout} />
         <div className='panel_list'>
-          <ChatPanel onCommand={sendCommand} />
+          <ChatPanel onCommand={sendCommand} messages={messages} />
           <RoomView data={roomData} onCommand={sendCommand} />
-          <ActionPanel />
+          <ActionPanel onCommand={sendCommand} />
         </div>
-        <form onSubmit={sendMessage}>
+        {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button>Send</button>
         </form>
         {messages.map((value, index) => (
           <p key={index}>{value}</p>
-        ))}
+        ))} */}
       </main>
     </>
   )
