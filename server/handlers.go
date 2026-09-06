@@ -72,3 +72,26 @@ func (s *Server) handleLook(p *Player) error {
 	s.sendResponse(p, "OK"+string(jsonData))
 	return nil
 }
+
+func (s *Server) handleMove(p *Player, direction string) error {
+	var currentLocation *Location
+	for i := range s.world.World.Locations {
+		if s.world.World.Locations[i].Id == p.CurrentRoom {
+			currentLocation = &s.world.World.Locations[i]
+			break
+		}
+	}
+	targetRoomID, exists := currentLocation.Exits[direction]
+	if !exists {
+		return fmt.Errorf("no exit in direction: %s", direction)
+	}
+	oldRoom := p.CurrentRoom
+	s.mu.Lock()
+	p.CurrentRoom = targetRoomID
+	s.mu.Unlock()
+	// NOTE: verify the ABNF
+	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
+	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
+	s.handleLook(p)
+	return nil
+}

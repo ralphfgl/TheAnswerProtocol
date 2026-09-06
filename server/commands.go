@@ -76,7 +76,19 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 		},
 	}
 	cr.commands["MOVE"] = &Command{
-		// place holder
+		Name:         "MOVE",
+		MinArgs:      1,
+		MaxArgs:      1,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("MOVE need a direction")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleMove(p, args[0])
+		},
 	}
 	// and so on
 }
