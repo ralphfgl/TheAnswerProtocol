@@ -12,6 +12,7 @@ function App() {
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
   const [roomData, setRoomData] = useState({})
+  const [inventory, setInventory] = useState(["test", "test", "test"])
 
   const headerdata =
   {
@@ -31,6 +32,10 @@ function App() {
       console.log(data)
       if (data.room) {
         setRoomData(data)
+      }
+      if (data.items) {
+        //setInventory(data.items)
+        // inventory command
       }
     }
     else if (message.startsWith("ERR")) {
@@ -103,12 +108,11 @@ function App() {
   if (!isAuthenticated) {
     return (
       <form className='login_form' onSubmit={(event) => submitLogin(event)}>
-        <input className='login_input' required type="text" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        <input className='login_input' required type="text" maxlength="15" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
         <button className='login_button'>Apply</button>
       </form>
     )
   }
-
   return (
     <>
       <main className='main'>
@@ -117,7 +121,7 @@ function App() {
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
           <RoomView data={roomData} onCommand={sendCommand} />
-          <ActionPanel onCommand={sendCommand} />
+          <ActionPanel onCommand={sendCommand} inventory={inventory} />
         </div>
         {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />

@@ -24,3 +24,35 @@
     background-color: #DDA15E;
     transition: 0.5s;
 }
+
+.action_list{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.inventory_list{
+    padding-left: 20px;
+}
+
+.inventory_item{
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.inventory_button{
+    font-size: 16px;
+    border: 0px;
+    border-radius: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(255, 255, 255);
+    background-color: #BC6C25;
+}
+
+.inventory_button:hover{
+    background-color: #DDA15E;
+    transition: 0.5s;
+}
