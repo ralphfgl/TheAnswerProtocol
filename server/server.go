@@ -34,6 +34,8 @@ type Player struct {
 	Attack      int
 	HP          int
 	MaxHP       int
+	Status      string
+	InCombat    bool
 }
 
 type Server struct {
@@ -127,9 +129,13 @@ func main() {
 func (s *Server) handleConnection(conn net.Conn) {
 	// create player in CONNECTED state
 	player := &Player{
-		Conn:   conn,
-		State:  Connected,
-		Writer: bufio.NewWriter(conn),
+		Conn:     conn,
+		State:    Connected,
+		Writer:   bufio.NewWriter(conn),
+		HP:       100,
+		MaxHP:    100,
+		Status:   "healthy",
+		InCombat: false,
 	}
 	// clean up on exit
 	defer func() {

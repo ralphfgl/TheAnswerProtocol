@@ -188,14 +188,28 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleDrop(p, strings.Join(args, " "))
 		},
 	}
+	cr.commands["STATUS"] = &Command{
+		Name:         "STATUS",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("STATUS takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleStatus(p)
+		},
+	}
 	// talk
 
 	// attack
 
-	//status
+	// status
 
 	// quest
 
-	//quests
-
+	// quests
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+
 	"the_answer_protocol/common"
 )
 
@@ -194,8 +195,8 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	p.GroupID = groupID
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
 	return nil
-
 }
+
 func (s *Server) handleGroupInvite(p *Player, args []string) error {
 	if p.GroupID == "" {
 		return fmt.Errorf("not in a group")
@@ -368,5 +369,19 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
+	return nil
+}
+
+func (s *Server) handleStatus(p *Player) error {
+	response := common.StatusInfo{
+		HP:     p.HP,
+		MaxHP:  p.MaxHP,
+		Status: p.Status,
+	}
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
