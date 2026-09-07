@@ -11,28 +11,29 @@ type RoomInfo struct {
 }
 
 type LookResponse struct {
+	Type    string   `json:"type"`
 	Room    RoomInfo `json:"room"`
 	Players []string `json:"players"`
 	Items   []string `json:"items"`
 	NPCs    []string `json:"npcs"`
 }
 
-// Future API types can go here
 type InventoryInfo struct {
+	Type  string   `json:"type"`
 	Items []string `json:"items"`
 }
 
 type StatusInfo struct {
-	HP    int `json:"hp"`
-	MaxHP int `json:"max_hp"`
-	// NOTE: look a enum in combat.go
-	// status need to be defined
+	Type   string `json:"type"`
+	HP     int    `json:"hp"`
+	MaxHP  int    `json:"max_hp"`
 	Status string `json:"status"`
 }
 
-// NOTE: for example purpose
 type CombatResponse struct {
-	AttackerHP int `json:"attacker_hp"`
-	TargetHP   int `json:"target_hp"`
-	Damage     int `json:"npc_damage,omitempty`
+	Type       string `json:"type"`
+	AttackerHP int    `json:"attacker_hp"`
+	TargetHP   int    `json:"target_hp"`
+	Damage     int    `json:"npc_damage"`
+	Status     string `json:"status"`
 }

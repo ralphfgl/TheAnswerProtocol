@@ -32,6 +32,7 @@ type Player struct {
 	GroupID     string
 	Inventory   []string
 	Attack      int
+	Defense     int
 	HP          int
 	MaxHP       int
 	Status      string
@@ -134,6 +135,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 		Writer:   bufio.NewWriter(conn),
 		HP:       100,
 		MaxHP:    100,
+		Attack:   55,
+		Defense:  40,
 		Status:   "healthy",
 		InCombat: false,
 	}
