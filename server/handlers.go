@@ -104,6 +104,7 @@ func (s *Server) handleLook(p *Player) error {
 		Exits:       currentLocation.Exits,
 	}
 	response := common.LookResponse{
+		Type:    "room",
 		Room:    roomInfo,
 		Players: playersInRoom,
 		Items:   itemIDs,
@@ -322,7 +323,11 @@ func (s *Server) handleInventory(p *Player) error {
 			}
 		}
 	}
-	jsonData, err := json.Marshal(itemNames)
+	response := common.InventoryInfo{
+		Type:  "inventory",
+		Items: itemNames,
+	}
+	jsonData, err := json.Marshal(response)
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
@@ -374,6 +379,7 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 
 func (s *Server) handleStatus(p *Player) error {
 	response := common.StatusInfo{
+		Type:   "status",
 		HP:     p.HP,
 		MaxHP:  p.MaxHP,
 		Status: p.Status,
@@ -383,5 +389,9 @@ func (s *Server) handleStatus(p *Player) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+
+func (s *Server) handleAttack(p *Player, npcRef string) error {
 	return nil
 }
