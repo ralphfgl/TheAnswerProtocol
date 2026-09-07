@@ -1,7 +1,74 @@
+// package main
+//
+// import (
+// 	"encoding/json"
+// 	"fmt"
+// 	"os"
+// 	"sync"
+// 	"time"
+// )
+//
+// type LogLevel string
+//
+// const (
+// 	LevelInfo  LogLevel = "INFO"
+// 	LevelWarn  LogLevel = "WARN"
+// 	LevelError LogLevel = "ERROR"
+// )
+//
+// type LogEntry struct {
+// 	Timestamp string   `json:"timestamp"`
+// 	Level     LogLevel `json:"level"`
+// 	Message   string   `json:"message"`
+// }
+//
+// type Logger struct {
+// 	mu sync.Mutex
+// }
+//
+// func NewLogger() *Logger {
+// 	return &Logger{}
+// }
+//
+// func (l *Logger) log(level LogLevel, format string, args ...any) {
+// 	l.mu.Lock()
+// 	defer l.mu.Unlock()
+//
+// 	entry := LogEntry{
+// 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
+// 		Level:     level,
+// 		Message:   fmt.Sprintf(format, args...),
+// 	}
+//
+// 	jsonData, err := json.Marshal(entry)
+// 	if err != nil {
+// 		fmt.Fprintln(os.Stderr, "failed to create log entry:", err)
+// 		return
+// 	}
+// 	if level == LevelError {
+// 		fmt.Fprintln(os.Stderr, string(jsonData))
+// 	} else {
+// 		fmt.Println(string(jsonData))
+// 	}
+// }
+//
+// func (l *Logger) Info(format string, args ...any) {
+// 	l.log(LevelInfo, format, args...)
+// }
+//
+// func (l *Logger) Warn(format string, args ...any) {
+// 	l.log(LevelWarn, format, args...)
+// }
+//
+// func (l *Logger) Error(format string, args ...any) {
+// 	l.log(LevelError, format, args...)
+// }
+
 package main
 
 import (
 	"fmt"
+	"os"
 	"sync"
 	"time"
 )
@@ -14,56 +81,58 @@ const (
 	LevelError LogLevel = "ERROR"
 )
 
-type LogEntry struct {
-	Timestamp string                 `json:"timestamp"`
-	Level     string                 `json:"level"`
-	Event     string                 `json:"event"`
-	Message   string                 `json:"message"`
-	Data      map[string]interface{} `json:"data,omitempty"`
-}
-
 type Logger struct {
-	Mu sync.Mutex
+	mu sync.Mutex
 }
 
 func NewLogger() *Logger {
 	return &Logger{}
 }
 
-func (l *Logger) logEntry(
+func (l *Logger) log(
 	level LogLevel,
-	event string,
-	message string,
-	data map[string]interface{},
+	format string,
+	args ...any,
 ) {
-	l.Mu.Lock()
-	defer l.Mu.Unlock()
+	l.mu.Lock()
+	defer l.mu.Unlock()
 
-	entry := LogEntry{
-		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
-		Level:     string(level),
-		Event:     event,
-		Message:   message,
-		Data:      data,
+	timestamp := time.Now().Format("15:04:05")
+	message := fmt.Sprintf(format, args...)
+
+	var levelText string
+
+	switch level {
+	case LevelInfo:
+		levelText = "\033[34mINFO \033[0m"
+	case LevelWarn:
+		levelText = "\033[33mWARN \033[0m"
+	case LevelError:
+		levelText = "\033[31mERROR\033[0m"
 	}
 
-	fmt.Printf(
-		"[%s] [%s] %s: %s\n",
-		entry.Timestamp,
-		entry.Level,
-		event,
+	output := fmt.Sprintf(
+		"\033[2m%s\033[0m %s %s\n",
+		timestamp,
+		levelText,
 		message,
 	)
+
+	if level == LevelError {
+		fmt.Fprint(os.Stderr, output)
+	} else {
+		fmt.Print(output)
+	}
 }
 
-func (l *Logger) Info(event, message string, data map[string]interface{}) {
-	l.logEntry(LevelInfo, event, message, data)
+func (l *Logger) Info(format string, args ...any) {
+	l.log(LevelInfo, format, args...)
 }
 
-func (l *Logger) Warn(event, message string, data map[string]interface{}) {
-	l.logEntry(LevelWarn, event, message, data)
+func (l *Logger) Warn(format string, args ...any) {
+	l.log(LevelWarn, format, args...)
 }
 
-func (l *Logger) Error(event, message string, data map[string]interface{}) {
-	l.logEntry(LevelError, event, message, data)
+func (l *Logger) Error(format string, args ...any) {
+	l.log(LevelError, format, args...)
 }

@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"log"
 	"maps"
+	"math/rand"
 	"slices"
 	"strings"
-	"math/rand"
 
 	"the_answer_protocol/common"
 )
 
 func (s *Server) handleConnect(player *Player, username string) {
-	// NOTE: we handle the state issue as a 400 error, even if not present in the RFC
 	if player.State != Connected {
 		s.sendError(player, 400, "INVALID_STATE")
 		return
@@ -42,8 +41,7 @@ func (s *Server) handleConnect(player *Player, username string) {
 	s.players[username] = player
 
 	s.sendResponse(player, "OK connected")
-	// NOTE: add IP and maybe format the timestamp
-	log.Printf("Player %s connected", username)
+	s.logger.Info("Player authenticated: username=%s address=%s", username, player.Conn.RemoteAddr())
 }
 
 func (s *Server) handleQuit(player *Player) {
@@ -133,12 +131,13 @@ func (s *Server) handleMove(p *Player, direction string) error {
 	if !exists {
 		s.sendError(p, 301, "NO_EXIT")
 		return nil
-		//return fmt.Errorf("room %s do not exist", targetRoomID)
 	}
 	oldRoom := p.CurrentRoom
 	s.Mu.Lock()
 	p.CurrentRoom = targetRoomID
 	s.Mu.Unlock()
+	// FIX: add logg?
+	// s.logger.Info("World state changed: player=%s move from=%s to=%s", p.Username, oldRoom, targetRoomID)
 	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
 	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
 	s.sendResponse(p, fmt.Sprintf("OK room=%s", p.CurrentRoom))
@@ -335,6 +334,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	}
 	p.Inventory = append(p.Inventory, targetItemID)
 	s.Mu.Unlock()
+	// FIX :add logging?
+	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
 	return nil
@@ -380,7 +381,6 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	if targetItemID == "" {
 		s.sendError(p, 404, "ITEM_NOT_IN_INVENTORY")
 		return nil
-		//return fmt.Errorf("item not in inventory: %s", itemRef)
 	}
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
@@ -390,7 +390,6 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 		}
 	}
 	s.Mu.Lock()
-	// remove from inventory adn add to the room
 	for i, id := range p.Inventory {
 		if id == targetItemID {
 			p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
@@ -399,6 +398,8 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	}
 	currentLocation.Items = append(currentLocation.Items, targetItemID)
 	s.Mu.Unlock()
+	// FIX :add logging?
+	// s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
 	return nil
@@ -419,9 +420,9 @@ func (s *Server) handleStatus(p *Player) error {
 	return nil
 }
 
-func (s *Server) handleAttack(p *Player, npcRef string) error {
-	return nil
-}
+// func (s *Server) handleAttack(p *Player, npcRef string) error {
+// 	return nil
+// }
 
 func (s *Server) handleTalk(p *Player, npcRef string) error {
 	npcRef = strings.TrimSpace(npcRef)
@@ -474,4 +475,3 @@ func (s *Server) handleTalk(p *Player, npcRef string) error {
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
->>>>>>> main
