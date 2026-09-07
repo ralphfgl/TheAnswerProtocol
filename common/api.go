@@ -27,7 +27,7 @@ type StatusInfo struct {
 	MaxHP int `json:"max_hp"`
 	// NOTE: look a enum in combat.go
 	// status need to be defined
-	Status int
+	Status string `json:"status"`
 }
 
 // NOTE: for example purpose
