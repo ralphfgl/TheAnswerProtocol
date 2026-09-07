@@ -12,30 +12,34 @@ function App() {
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
   const [roomData, setRoomData] = useState({})
-  const [inventory, setInventory] = useState(["test", "test", "test"])
+  const [inventoryData, setInventoryData] = useState({})
+  const [headerData, setHeaderData] = useState({})
+  const [talkData, setTalkData] = useState({})
 
-  const headerdata =
-  {
-    "name": nickname,
-    "health": 100,
-    "players": 10,
-    "players_room": 2
-  }
 
   const parseMessage = (message: string) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
       wsRef.current.send("LOOK")
+      wsRef.current.send("STATUS")
     }
     else if (message.startsWith("OK {")) {
-      const data = JSON.parse(message.substring(3))
+      let data = JSON.parse(message.substring(3))
       console.log(data)
       if (data.room) {
         setRoomData(data)
       }
-      if (data.items) {
-        //setInventory(data.items)
-        // inventory command
+      if (data.type == "status") {
+        console.log(data)
+        setHeaderData(data)
+      }
+      if (data.type == "inventory") {
+        setInventoryData(data)
+      }
+      if (data.type == "talk") {
+        console.log("Data")
+        console.log(data)
+        setTalkData(data)
       }
     }
     else if (message.startsWith("ERR")) {
@@ -117,11 +121,11 @@ function App() {
     <>
       <main className='main'>
         <h1 className='title'>The Answer Protocol</h1>
-        <Header data={headerdata} onLogout={handleLogout} />
+        <Header data={headerData} nickname={nickname} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
-          <RoomView data={roomData} onCommand={sendCommand} />
-          <ActionPanel onCommand={sendCommand} inventory={inventory} />
+          <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
+          <ActionPanel onCommand={sendCommand} inventory={inventoryData} />
         </div>
         {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
