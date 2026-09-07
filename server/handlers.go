@@ -3,8 +3,51 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"strings"
 	"the_answer_protocol/common"
 )
+
+func (s *Server) handleConnect(player *Player, username string) {
+	// NOTE: we handle the state issue as a 400 error, even if not present in the RFC
+	if player.State != Connected {
+		s.sendError(player, 400, "INVALID_STATE")
+		return
+	}
+	username = strings.TrimSpace(username)
+	if username == "" {
+		s.sendError(player, 400, "USERNAME_REQUIRED")
+		return
+	}
+	// check if username in use
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	// map lookup in go returns 2 value, the actual value and a boolean hat tell if the key exist
+	// comma separate the assignement from the condition
+	if _, exists := s.players[username]; exists {
+		s.sendError(player, 201, "NAME_IN_USE")
+		return
+	}
+	// registration
+	player.Username = username
+	player.State = Authenticated
+	player.CurrentRoom = "start"
+	//player.Inventory
+	//player.HP = 100
+
+	s.players[username] = player
+
+	s.sendResponse(player, "OK connected")
+	// NOTE: add IP and maybe format the timestamp
+	log.Printf("Player %s connected", username)
+}
+
+func (s *Server) handleQuit(player *Player) {
+	s.sendResponse(player, "OK bye")
+	log.Printf("Player %s quit", player.Username)
+	// NOTE: the defer will clean up, this is redundunt
+	player.Conn.Close()
+}
 
 func (s *Server) handleLook(p *Player) error {
 	room := p.CurrentRoom
@@ -19,13 +62,13 @@ func (s *Server) handleLook(p *Player) error {
 		}
 	}
 	var playersInRoom []string
-	s.mu.RLock()
+	s.Mu.RLock()
 	for _, player := range s.players {
 		if player.CurrentRoom == room && player.Username != p.Username {
 			playersInRoom = append(playersInRoom, player.Username)
 		}
 	}
-	s.mu.RUnlock()
+	s.Mu.RUnlock()
 	var itemIDs []string
 	for _, itemID := range currentLocation.Items {
 		found := false
@@ -70,5 +113,260 @@ func (s *Server) handleLook(p *Player) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+
+func (s *Server) handleMove(p *Player, direction string) error {
+	var currentLocation *Location
+	for i := range s.world.World.Locations {
+		if s.world.World.Locations[i].Id == p.CurrentRoom {
+			currentLocation = &s.world.World.Locations[i]
+			break
+		}
+	}
+	targetRoomID, exists := currentLocation.Exits[direction]
+	if !exists {
+		s.sendError(p, 301, "NO_EXIT")
+		return nil
+		//return fmt.Errorf("room %s do not exist", targetRoomID)
+	}
+	oldRoom := p.CurrentRoom
+	s.Mu.Lock()
+	p.CurrentRoom = targetRoomID
+	s.Mu.Unlock()
+	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
+	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
+	s.sendResponse(p, fmt.Sprintf("OK room=%s", p.CurrentRoom))
+	s.handleLook(p)
+	return nil
+}
+
+func (s *Server) handleChat(p *Player, scope string, message string) error {
+	event := fmt.Sprintf("EVT %s CHAT %s %s", scope, p.Username, message)
+	switch scope {
+	case "GLOBAL":
+		s.broadcastAll(event)
+	case "ROOM":
+		s.broadcastRoomEvent(p.CurrentRoom, event)
+	case "GROUP":
+		if p.GroupID == "" {
+			return fmt.Errorf("not in a group")
+		}
+		s.broadcastGroupEvent(p.GroupID, event)
+	}
+	s.sendResponse(p, "OK")
+	return nil
+}
+
+func (s *Server) handleWho(p *Player) error {
+	s.Mu.RLock()
+	defer s.Mu.RUnlock()
+	s.sendResponse(p, fmt.Sprintf("OK players=%d", len(s.players)))
+	return nil
+}
+
+func (s *Server) handleGroup(p *Player, args []string) error {
+	subCmd := args[0]
+	rest := args[1:]
+	switch subCmd {
+	case "CREATE":
+		return s.handleGroupCreate(p)
+	case "INVITE":
+		return s.handleGroupInvite(p, rest)
+	case "JOIN":
+		return s.handleGroupJoin(p, rest)
+	case "LEAVE":
+		return s.handleGroupLeave(p)
+	default:
+		return fmt.Errorf("unknown group subcommand: %s", subCmd)
+	}
+}
+
+func (s *Server) handleGroupCreate(p *Player) error {
+	if p.GroupID != "" {
+		return fmt.Errorf("already in a group")
+	}
+	s.Mu.Lock()
+	defer s.Mu.Unlock()
+	groupID := fmt.Sprintf("group_%d", s.nextGroupID)
+	s.nextGroupID++
+	s.groups[groupID] = []string{p.Username}
+	p.GroupID = groupID
+	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
+	return nil
+
+}
+func (s *Server) handleGroupInvite(p *Player, args []string) error {
+	if p.GroupID == "" {
+		return fmt.Errorf("not in a group")
+	}
+	if len(args) < 1 {
+		return fmt.Errorf("GROUP INVITE needs a username")
+	}
+	target := args[0]
+	s.Mu.RLock()
+	targetPlayer, exists := s.players[target]
+	s.Mu.RUnlock()
+	if !exists {
+		return fmt.Errorf("player not found: %s", target)
+	}
+	if targetPlayer.GroupID != "" {
+		return fmt.Errorf("player already in a group")
+	}
+	s.sendResponse(targetPlayer, fmt.Sprintf("EVT GROUP INVITE %s invited you to group %s", p.Username, p.GroupID))
+	s.sendResponse(p, "OK")
+	return nil
+}
+
+func (s *Server) handleGroupJoin(p *Player, args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("GROUP JOIN needs a group ID")
+	}
+	if p.GroupID != "" {
+		return fmt.Errorf("already in a group")
+	}
+	groupID := args[0]
+	s.Mu.Lock()
+	if _, exists := s.groups[groupID]; !exists {
+		s.Mu.Unlock()
+		return fmt.Errorf("group not found: %s", groupID)
+	}
+	s.groups[groupID] = append(s.groups[groupID], p.Username)
+	p.GroupID = groupID
+	s.Mu.Unlock()
+	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
+	s.broadcastGroupEvent(groupID, fmt.Sprintf("EVT JOIN %s joined the group", p.Username))
+	return nil
+}
+
+func (s *Server) handleGroupLeave(p *Player) error {
+	if p.GroupID == "" {
+		return fmt.Errorf("not in a group")
+	}
+	groupID := p.GroupID
+	s.Mu.Lock()
+	for i, name := range s.groups[groupID] {
+		if name == p.Username {
+			s.groups[groupID] = append(s.groups[groupID][:i], s.groups[groupID][i+1:]...)
+			break
+		}
+	}
+	if len(s.groups[groupID]) == 0 {
+		delete(s.groups, groupID)
+	}
+	p.GroupID = ""
+	s.Mu.Unlock()
+	s.sendResponse(p, "OK")
+	s.broadcastGroupEvent("EVT GROUP LEAVE %s left the group", p.Username)
+	return nil
+}
+
+func (s *Server) handleTake(p *Player, itemRef string) error {
+	// NOTE: could change the world structure to map instead of slice to access directly with key
+	var currentLocation *Location
+	for i := range s.world.World.Locations {
+		if s.world.World.Locations[i].Id == p.CurrentRoom {
+			currentLocation = &s.world.World.Locations[i]
+			break
+		}
+	}
+	var targetItemID string
+	var targetItem Item
+	// search in the room and in the world, itemID is the name while item is the object
+	for _, itemID := range currentLocation.Items {
+		for _, item := range s.world.World.Items {
+			if item.Id == itemID {
+				if item.Id == itemRef || strings.EqualFold(item.Name, itemRef) {
+					targetItemID = itemID
+					targetItem = item
+					break
+				}
+			}
+		}
+		if targetItemID != "" {
+			break
+		}
+	}
+	// item not in the room
+	if targetItemID == "" {
+		s.sendError(p, 404, "ITEM_NOT_FOUND")
+		return nil
+		//return fmt.Errorf("item not found in room: %s", itemRef)
+	}
+	if !targetItem.Obtainable {
+		return fmt.Errorf("item cannot be taken: %s", targetItem.Name)
+	}
+	s.Mu.Lock()
+	// remove from the room
+	for i, id := range currentLocation.Items {
+		if id == targetItemID {
+			currentLocation.Items = append(currentLocation.Items[:i], currentLocation.Items[i+1:]...)
+			break
+		}
+	}
+	p.Inventory = append(p.Inventory, targetItemID)
+	s.Mu.Unlock()
+	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
+	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
+	return nil
+}
+
+func (s *Server) handleInventory(p *Player) error {
+	itemNames := []string{}
+	for _, itemID := range p.Inventory {
+		for _, item := range s.world.World.Items {
+			if item.Id == itemID {
+				itemNames = append(itemNames, item.Name)
+				break
+			}
+		}
+	}
+	jsonData, err := json.Marshal(itemNames)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+
+func (s *Server) handleDrop(p *Player, itemRef string) error {
+	var targetItemID string
+	for _, itemID := range p.Inventory {
+		for _, item := range s.world.World.Items {
+			if item.Id == itemID {
+				if item.Id == itemRef || strings.EqualFold(item.Name, itemRef) {
+					targetItemID = itemID
+					break
+				}
+			}
+		}
+		if targetItemID != "" {
+			break
+		}
+	}
+	if targetItemID == "" {
+		s.sendError(p, 404, "ITEM_NOT_IN_INVENTORY")
+		return nil
+		//return fmt.Errorf("item not in inventory: %s", itemRef)
+	}
+	var currentLocation *Location
+	for i := range s.world.World.Locations {
+		if s.world.World.Locations[i].Id == p.CurrentRoom {
+			currentLocation = &s.world.World.Locations[i]
+			break
+		}
+	}
+	s.Mu.Lock()
+	// remove from inventory adn add to the room
+	for i, id := range p.Inventory {
+		if id == targetItemID {
+			p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
+			break
+		}
+	}
+	currentLocation.Items = append(currentLocation.Items, targetItemID)
+	s.Mu.Unlock()
+	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
+	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
 	return nil
 }

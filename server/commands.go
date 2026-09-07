@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 )
 
 type Command struct {
@@ -76,7 +77,125 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 		},
 	}
 	cr.commands["MOVE"] = &Command{
-		// place holder
+		Name:         "MOVE",
+		MinArgs:      1,
+		MaxArgs:      1,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) != 1 {
+				return fmt.Errorf("MOVE need a direction")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleMove(p, args[0])
+		},
 	}
-	// and so on
+	cr.commands["CHAT"] = &Command{
+		Name:         "CHAT",
+		MinArgs:      2,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 2 {
+				return fmt.Errorf("CHAT needs a scope and a message")
+			}
+			scope := args[0]
+			if scope != "GLOBAL" && scope != "ROOM" && scope != "GROUP" {
+				return fmt.Errorf("invalid scope: %s (use GLOBAL, ROOM or GROUP)", scope)
+			}
+			return nil
+		},
+		// NOTE: return directly scope and message
+		Handler: func(p *Player, args []string) error {
+			scope := args[0]
+			message := strings.Join(args[1:], " ")
+			return s.handleChat(p, scope, message)
+		},
+	}
+	cr.commands["WHO"] = &Command{
+		Name:         "WHO",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("WHO takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleWho(p)
+		},
+	}
+	cr.commands["GROUP"] = &Command{
+		Name:         "GROUP",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("GROUP need a subcommand (CREATE, INVITE, JOIN, LEAVE)")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleGroup(p, args)
+		},
+	}
+	cr.commands["TAKE"] = &Command{
+		Name:         "TAKE",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("TAKE needs an item ID")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleTake(p, strings.Join(args, " "))
+		},
+	}
+	cr.commands["INVENTORY"] = &Command{
+		Name:         "INVENTORY",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("INVENTORY takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleInventory(p)
+		},
+	}
+	cr.commands["DROP"] = &Command{
+		Name:         "DROP",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("DROP needs an item ID")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleDrop(p, strings.Join(args, " "))
+		},
+	}
+	// talk
+
+	// attack
+
+	//status
+
+	// quest
+
+	//quests
+
 }

@@ -85,7 +85,7 @@ func (c *CLIClient) displayRoom(response string) {
 		return
 	}
 	c.currentRoom = lookResp.Room.Id
-	fmt.Print("\033[2J\033[H")
+	//fmt.Print("\033[2J\033[H")
 	fmt.Printf("=== %s ===\n", lookResp.Room.Name)
 	fmt.Printf("%s\n\n", lookResp.Room.Description)
 	// Exits
