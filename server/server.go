@@ -54,7 +54,12 @@ type Server struct {
 // we use a struct literal, no malloc is needed
 
 func NewServer(worldFile string) (*Server, error) {
-	world, err := parsing(worldFile)
+	// logging
+	logger := NewLogger()
+	logger.
+
+		// FIX: add validation
+		world, err := parsing(worldFile)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load world: %w", err)
 	}

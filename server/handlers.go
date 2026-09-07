@@ -391,7 +391,3 @@ func (s *Server) handleStatus(p *Player) error {
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
-
-func (s *Server) handleAttack(p *Player, npcRef string) error {
-	return nil
-}

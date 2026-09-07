@@ -43,6 +43,7 @@ type NPC struct {
 	Description string         `json:"description"`
 	Dialogue    []string       `json:"dialogue"`
 	Stats       map[string]int `json:"stats"`
+	Hostile     bool           `json:"hostile"`
 }
 
 func parsing(fileName string) (GameWorld, error) {
