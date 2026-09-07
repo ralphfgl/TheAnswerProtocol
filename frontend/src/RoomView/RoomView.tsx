@@ -13,7 +13,7 @@ function RoomView({ data, talk, onCommand }) {
             <p>Move:</p>
             <div className='room_buttons'>
                 {Object.keys(data.room.exits).map((value, index) => (
-                    <button className='room_button' key={index} onClick={() => onCommand("MOVE " + value.toUpperCase())}>{value.toUpperCase()}</button>
+                    <button className='room_button' key={index} onClick={() => onCommand("MOVE " + value)}>{value.toUpperCase()}</button>
                 ))}
             </div>
             <p>Items:</p>
@@ -34,15 +34,21 @@ function RoomView({ data, talk, onCommand }) {
             }
             <hr />
             <p>NPCs: </p>
-            {data.npcs.map((value, index) => (
-                <div key={index}>
-                    <p>{value}</p>
-                    <div className='room_actions'>
-                        <button className='room_button' onClick={() => onCommand("TALK " + value)}>TALK</button>
-                        <button className='room_button' onClick={() => onCommand("ATTACK " + value)}>ATTACK</button>
-                    </div>
-                </div>
-            ))}
+            {
+                data.npcs
+                    ?
+                    data.npcs.map((value, index) => (
+                        <div key={index}>
+                            <p>{value}</p>
+                            <div className='room_actions'>
+                                <button className='room_button' onClick={() => onCommand("TALK " + value)}>TALK</button>
+                                <button className='room_button' onClick={() => onCommand("ATTACK " + value)}>ATTACK</button>
+                            </div>
+                        </div>
+                    ))
+                    :
+                    <p>No NPCs</p>
+            }
             <hr />
             {talk && <p>{talk.dialogue}</p>}
             {/* <form className='room_form'>
