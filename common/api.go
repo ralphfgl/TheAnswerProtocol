@@ -37,3 +37,9 @@ type CombatResponse struct {
 	Damage     int    `json:"npc_damage"`
 	Status     string `json:"status"`
 }
+
+type TalkResponse struct {
+	Type     string `json:"type"`
+	NPC      string `json:"npc"`
+	Dialogue string `json:"dialogue"`
+}

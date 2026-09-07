@@ -1,6 +1,6 @@
 import './RoomView.css'
 
-function RoomView({ data, onCommand }) {
+function RoomView({ data, talk, onCommand }) {
     if (!data || !data.room) {
         return <p>Loading...</p>
     }
@@ -44,10 +44,11 @@ function RoomView({ data, onCommand }) {
                 </div>
             ))}
             <hr />
-            <form className='room_form'>
+            {talk && <p>{talk.dialogue}</p>}
+            {/* <form className='room_form'>
                 <input className='room_input' type="text" placeholder='Chat...' />
                 <button className='room_button'>Send</button>
-            </form>
+            </form> */}
         </section>
     )
 }

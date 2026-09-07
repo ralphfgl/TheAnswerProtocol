@@ -218,7 +218,21 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleAttack(p, strings.Join(args, " "))
 		},
 	}
-	// talk
+	cr.commands["TALK"] = &Command{
+		Name:         "TALK",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("TALK needs an NPC ID or name")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleTalk(p, strings.Join(args, " "))
+		},
+	}
 
 	// attack
 
