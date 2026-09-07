@@ -22,7 +22,7 @@ function App() {
     "players_room": 2
   }
 
-  const parseMessage = (message) => {
+  const parseMessage = (message: string) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
       wsRef.current.send("LOOK")
@@ -81,7 +81,7 @@ function App() {
     };
   }, [])
 
-  const sendMessage = (e) => {
+  const sendMessage = (e: Event) => {
     e.preventDefault()
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(inputValue)
@@ -89,12 +89,12 @@ function App() {
     setInputValue("")
   }
 
-  const sendCommand = (command) => {
+  const sendCommand = (command: string) => {
     console.log(command)
     wsRef.current.send(command)
   }
 
-  const submitLogin = (e) => {
+  const submitLogin = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     wsRef.current.send("CONNECT " + nickname)
   }
@@ -108,7 +108,7 @@ function App() {
   if (!isAuthenticated) {
     return (
       <form className='login_form' onSubmit={(event) => submitLogin(event)}>
-        <input className='login_input' required type="text" maxlength="15" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        <input className='login_input' required type="text" maxLength={15} placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
         <button className='login_button'>Apply</button>
       </form>
     )
