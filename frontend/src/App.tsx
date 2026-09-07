@@ -11,28 +11,36 @@ function App() {
   const [messages, setMessages] = useState([])
   const [inputValue, setInputValue] = useState("")
   const wsRef = useRef(null)
-  const jsonTest = { "type": "room", "id": "shop", "name": "General Store", "description": "Shelves lined with various goods and supplies.", "exits": { "west": "start" }, "spawns": [{ "npc_type": "merchant", "count": 1 }, { "npc_type": "TEST", "count": 2 }] }
-  const [roomData, setRoomData] = useState(jsonTest)
+  const [roomData, setRoomData] = useState({})
+  const [inventoryData, setInventoryData] = useState({})
+  const [headerData, setHeaderData] = useState({})
+  const [talkData, setTalkData] = useState({})
 
-  const headerdata =
-  {
-    "name": nickname,
-    "health": 100,
-    "players": 10,
-    "players_room": 2
-  }
 
-  const parseMessage = (message) => {
+  const parseMessage = (message: string) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
-      //wsRef.current.send("LOOK")
+      wsRef.current.send("LOOK")
+      wsRef.current.send("STATUS")
     }
     else if (message.startsWith("OK {")) {
-      console.log(message.substring(3))
-      // const data = JSON.parse(message.substring(3))
-      // if (data.room) {
-      //   setRoomData(data)
-      // }
+      let data = JSON.parse(message.substring(3))
+      console.log(data)
+      if (data.room) {
+        setRoomData(data)
+      }
+      if (data.type == "status") {
+        console.log(data)
+        setHeaderData(data)
+      }
+      if (data.type == "inventory") {
+        setInventoryData(data)
+      }
+      if (data.type == "talk") {
+        console.log("Data")
+        console.log(data)
+        setTalkData(data)
+      }
     }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
@@ -77,7 +85,7 @@ function App() {
     };
   }, [])
 
-  const sendMessage = (e) => {
+  const sendMessage = (e: Event) => {
     e.preventDefault()
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(inputValue)
@@ -85,18 +93,18 @@ function App() {
     setInputValue("")
   }
 
-  const sendCommand = (command) => {
+  const sendCommand = (command: string) => {
     console.log(command)
     wsRef.current.send(command)
   }
 
-  const submitLogin = (e) => {
+  const submitLogin = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     wsRef.current.send("CONNECT " + nickname)
   }
 
   const handleLogout = () => {
-    // wsRef.current.send("QUIT")
+    wsRef.current.send("QUIT")
     setIsAuthenticated(false)
     setNickname("")
   }
@@ -104,29 +112,28 @@ function App() {
   if (!isAuthenticated) {
     return (
       <form className='login_form' onSubmit={(event) => submitLogin(event)}>
-        <input className='login_input' required type="text" placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
+        <input className='login_input' required type="text" maxLength={15} placeholder='Enter your name' value={nickname} onChange={(e) => setNickname(e.target.value)} />
         <button className='login_button'>Apply</button>
       </form>
     )
   }
-
   return (
     <>
       <main className='main'>
         <h1 className='title'>The Answer Protocol</h1>
-        <Header data={headerdata} onLogout={handleLogout} />
+        <Header data={headerData} nickname={nickname} onLogout={handleLogout} />
         <div className='panel_list'>
-          <ChatPanel onCommand={sendCommand} />
-          <RoomView data={roomData} onCommand={sendCommand} />
-          <ActionPanel />
+          <ChatPanel onCommand={sendCommand} messages={messages} />
+          <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
+          <ActionPanel onCommand={sendCommand} inventory={inventoryData} />
         </div>
-        <form onSubmit={sendMessage}>
+        {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
           <button>Send</button>
         </form>
         {messages.map((value, index) => (
           <p key={index}>{value}</p>
-        ))}
+        ))} */}
       </main>
     </>
   )

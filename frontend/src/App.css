@@ -29,22 +29,23 @@
 
 .login_input{
   font-size: 24px;
-  border-radius: 15px;
+  border-radius: 20px;
   padding: 10px;
-  border: 1px solid grey;
+  border: 1px solid #D4CCA5;
 }
 
 .login_button{
   font-size: 16px;
-  cursor: pointer;
-  border-radius: 15px;
+  border: 0px;
+  border-radius: 20px;
   padding: 0px 30px;
+  cursor: pointer;
   height: 49px;
-  border: 0;
-  background-color: #feea00;
+  color: rgb(255, 255, 255);
+  background-color: #BC6C25;
 }
 
 .login_button:hover{
-  background-color: #d6c725;
-  transition: 0.2s;
+  background-color: #DDA15E;
+  transition: 0.5s;
 }

@@ -1,5 +1,14 @@
 package main
 
+import (
+	"encoding/json"
+	"fmt"
+	"maps"
+	"slices"
+
+	"the_answer_protocol/common"
+)
+
 func (s *Server) broadcastAll(message string) {
 	s.Mu.RLock()
 	defer s.Mu.RUnlock()
@@ -30,4 +39,17 @@ func (s *Server) broadcastGroupEvent(groupID string, message string) {
 			s.sendResponse(player, message)
 		}
 	}
+}
+
+func (s *Server) broadcastGroupList() error {
+	groupEvent := common.GroupInfo{
+		Type:      "group",
+		GroupList: slices.Collect(maps.Keys(s.groups)),
+	}
+	jsonData, err := json.Marshal(groupEvent)
+	if err != nil {
+		return fmt.Errorf("failed to marshal jsonData: %w", err)
+	}
+	s.broadcastAll(string(jsonData))
+	return nil
 }

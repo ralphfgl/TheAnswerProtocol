@@ -15,6 +15,11 @@
     gap: 5px;
 }
 
+.room_buttons{
+    display: flex;
+    gap: 5px;
+}
+
 .room_button{
     font-size: 16px;
     border: 0px;
@@ -40,4 +45,30 @@
     border-radius: 20px;
     padding: 10px;
     width: 80%;
+}
+
+.items_list{
+    padding-left: 20px;
+}
+
+.item_item{
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.item_button{
+    font-size: 16px;
+    border: 0px;
+    border-radius: 20px;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: rgb(255, 255, 255);
+    background-color: #BC6C25;
+}
+
+.item_button:hover{
+    background-color: #DDA15E;
+    transition: 0.5s;
 }

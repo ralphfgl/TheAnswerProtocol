@@ -4,7 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"maps"
+	"slices"
 	"strings"
+	"math/rand"
 
 	"the_answer_protocol/common"
 )
@@ -114,7 +117,7 @@ func (s *Server) handleLook(p *Player) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-	s.sendResponse(p, "OK"+string(jsonData))
+	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
 
@@ -179,6 +182,8 @@ func (s *Server) handleGroup(p *Player, args []string) error {
 		return s.handleGroupJoin(p, rest)
 	case "LEAVE":
 		return s.handleGroupLeave(p)
+	case "DISPLAY":
+		return s.handleGroupDisplay(p)
 	default:
 		return fmt.Errorf("unknown group subcommand: %s", subCmd)
 	}
@@ -195,6 +200,9 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	s.groups[groupID] = []string{p.Username}
 	p.GroupID = groupID
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -238,6 +246,9 @@ func (s *Server) handleGroupJoin(p *Player, args []string) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
 	s.broadcastGroupEvent(groupID, fmt.Sprintf("EVT JOIN %s joined the group", p.Username))
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -260,6 +271,22 @@ func (s *Server) handleGroupLeave(p *Player) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, "OK")
 	s.broadcastGroupEvent("EVT GROUP LEAVE %s left the group", p.Username)
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) handleGroupDisplay(p *Player) error {
+	groupEvent := common.GroupInfo{
+		Type:      "group",
+		GroupList: slices.Collect(maps.Keys(s.groups)),
+	}
+	jsonData, err := json.Marshal(groupEvent)
+	if err != nil {
+		return fmt.Errorf("failed to marshal group list: %w", err)
+	}
+	s.sendResponse(p, string(jsonData))
 	return nil
 }
 
@@ -391,3 +418,60 @@ func (s *Server) handleStatus(p *Player) error {
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
+
+func (s *Server) handleAttack(p *Player, npcRef string) error {
+	return nil
+}
+
+func (s *Server) handleTalk(p *Player, npcRef string) error {
+	npcRef = strings.TrimSpace(npcRef)
+	var targetNPC *NPC
+
+	s.Mu.RLock()
+	currentRoom := p.CurrentRoom
+	s.Mu.RUnlock()
+
+	for _, loc := range s.world.World.Locations {
+		if loc.Id == currentRoom {
+			for _, sp := range loc.Spawns {
+				for i, npc := range s.world.World.NPCs {
+					if npc.Id == sp.NpcType {
+						if strings.EqualFold(npc.Id, npcRef) || strings.EqualFold(npc.Name, npcRef) {
+							targetNPC = &s.world.World.NPCs[i]
+							break
+						}
+					}
+				}
+				if targetNPC != nil {
+					break
+				}
+			}
+			break
+		}
+	}
+
+	if targetNPC == nil {
+		s.sendError(p, 404, "NPC_NOT_FOUND")
+		return nil
+	}
+
+	dialogueText := ""
+	if len(targetNPC.Dialogue) > 0 {
+		dialogueText = targetNPC.Dialogue[rand.Intn(len(targetNPC.Dialogue))]
+	}
+
+	response := common.TalkResponse{
+		Type:     "talk",
+		NPC:      targetNPC.Name,
+		Dialogue: dialogueText,
+	}
+
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+
+	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+>>>>>>> main
