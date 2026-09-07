@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"maps"
+	"slices"
 	"strings"
 
 	"the_answer_protocol/common"
@@ -179,6 +181,8 @@ func (s *Server) handleGroup(p *Player, args []string) error {
 		return s.handleGroupJoin(p, rest)
 	case "LEAVE":
 		return s.handleGroupLeave(p)
+	case "DISPLAY":
+		return s.handleGroupDisplay(p)
 	default:
 		return fmt.Errorf("unknown group subcommand: %s", subCmd)
 	}
@@ -195,6 +199,9 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	s.groups[groupID] = []string{p.Username}
 	p.GroupID = groupID
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -238,6 +245,9 @@ func (s *Server) handleGroupJoin(p *Player, args []string) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
 	s.broadcastGroupEvent(groupID, fmt.Sprintf("EVT JOIN %s joined the group", p.Username))
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -260,6 +270,22 @@ func (s *Server) handleGroupLeave(p *Player) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, "OK")
 	s.broadcastGroupEvent("EVT GROUP LEAVE %s left the group", p.Username)
+	if err := s.broadcastGroupList(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Server) handleGroupDisplay(p *Player) error {
+	groupEvent := common.GroupInfo{
+		Type:      "group",
+		GroupList: slices.Collect(maps.Keys(s.groups)),
+	}
+	jsonData, err := json.Marshal(groupEvent)
+	if err != nil {
+		return fmt.Errorf("failed to marshal group list: %w", err)
+	}
+	s.sendResponse(p, string(jsonData))
 	return nil
 }
 

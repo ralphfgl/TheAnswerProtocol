@@ -23,6 +23,11 @@ type InventoryInfo struct {
 	Items []string `json:"items"`
 }
 
+type GroupInfo struct {
+	Type      string   `json:"type"`
+	GroupList []string `json:"group_list"`
+}
+
 type StatusInfo struct {
 	Type   string `json:"type"`
 	HP     int    `json:"hp"`
@@ -34,6 +39,7 @@ type CombatResponse struct {
 	Type       string `json:"type"`
 	AttackerHP int    `json:"attacker_hp"`
 	TargetHP   int    `json:"target_hp"`
-	Damage     int    `json:"npc_damage"`
+	Atk        int    `json:"player_damage"`
+	CounterAtk int    `json:"npc_damage"`
 	Status     string `json:"status"`
 }
