@@ -15,6 +15,7 @@ function App() {
   const [inventoryData, setInventoryData] = useState({})
   const [headerData, setHeaderData] = useState({})
   const [talkData, setTalkData] = useState({})
+  const [groupData, setGroupData] = useState([])
 
 
   const parseMessage = (message: string) => {
@@ -41,6 +42,9 @@ function App() {
         console.log(data)
         setTalkData(data)
       }
+    }
+    else if (message.startsWith("OK group=")){
+      setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
     }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
@@ -125,7 +129,7 @@ function App() {
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
           <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
-          <ActionPanel onCommand={sendCommand} inventory={inventoryData} />
+          <ActionPanel onCommand={sendCommand} inventory={inventoryData} group={groupData} />
         </div>
         {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />

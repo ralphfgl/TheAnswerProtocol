@@ -1,15 +1,15 @@
 import './ActionPanel.css'
 
-function ActionPanel({ onCommand, inventory }) {
-    const actions = ["LOOK", "WHO", "INVENTORY", "STATUS"]
+function ActionPanel({ onCommand, inventory, group }) {
+    const actions = ["LOOK", "WHO", "INVENTORY", "STATUS", "GROUP CREATE"]
     return (
         <section className='action_panel'>
             <h2 className='action_title'>Inventory and action panel</h2>
             <p>My Inventory:</p>
-            {inventory.length > 0
+            {inventory?.items?.length > 0
                 ?
                 <ul className='inventory_list'>
-                    {(inventory.map((value, index) => (
+                    {(inventory.items.map((value, index) => (
                         <li key={index}>
                             <div className='inventory_item'>
                                 <p>{value}</p>
@@ -28,6 +28,19 @@ function ActionPanel({ onCommand, inventory }) {
                     <button className='action_button' onClick={() => onCommand(value)} key={index}>{value}</button>
                 ))}
             </div>
+            <p>Groups:</p>
+            {
+                group.length > 0
+                    ?
+                    (group.map((value, index) => (
+                        <div key={index}>
+                            <p>{value}</p>
+                            <button onClick={() => onCommand("GROUP LEAVE")}>Leave</button>
+                        </div>
+                    )))
+                    :
+                    <p>No groups cread</p>
+            }
         </section >
     )
 }

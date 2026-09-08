@@ -194,18 +194,17 @@ func (s *Server) handleGroupCreate(p *Player) error {
 		return fmt.Errorf("already in a group")
 	}
 	s.Mu.Lock()
-	defer s.Mu.Unlock()
 	groupID := fmt.Sprintf("group_%d", s.nextGroupID)
 	s.nextGroupID++
 	s.groups[groupID] = []string{p.Username}
 	p.GroupID = groupID
+	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
 	if err := s.broadcastGroupList(); err != nil {
 		return err
 	}
 	return nil
 }
-
 func (s *Server) handleGroupInvite(p *Player, args []string) error {
 	if p.GroupID == "" {
 		return fmt.Errorf("not in a group")
@@ -337,6 +336,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
+	s.handleLook(p)
+	s.handleInventory(p)
 	return nil
 }
 
@@ -401,6 +402,8 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
+	s.handleLook(p)
+	s.handleInventory(p)
 	return nil
 }
 
