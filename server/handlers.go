@@ -280,6 +280,7 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 	groupEvent := common.GroupInfo{
 		Type:      "group",
 		GroupList: slices.Collect(maps.Keys(s.groups)),
+		MyGroup: p.GroupID,
 	}
 	jsonData, err := json.Marshal(groupEvent)
 	if err != nil {

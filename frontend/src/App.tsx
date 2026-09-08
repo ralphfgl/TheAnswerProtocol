@@ -16,6 +16,8 @@ function App() {
   const [headerData, setHeaderData] = useState({})
   const [talkData, setTalkData] = useState({})
   const [groupData, setGroupData] = useState({})
+  const [playersServer, setPlayersServer] = useState(0)
+  const [playersRoom, setPlayersRoom] = useState(0)
 
 
   const parseMessage = (message: string) => {
@@ -23,12 +25,21 @@ function App() {
       setIsAuthenticated(true)
       wsRef.current.send("LOOK")
       wsRef.current.send("STATUS")
+      wsRef.current.send("GROUP DISPLAY")
+      wsRef.current.send("WHO")
     }
     else if (message.startsWith("OK {")) {
       let data = JSON.parse(message.substring(3))
       console.log(data)
       if (data.room) {
         setRoomData(data)
+        console.log(data.players.length)
+        if (data?.players?.length < 1) {
+          setPlayersRoom(1)
+        }
+        else {
+          setPlayersRoom(data.players?.length + 1)
+        }
       }
       if (data.type == "status") {
         setHeaderData(data)
@@ -42,6 +53,9 @@ function App() {
       if (data.type == "group") {
         setGroupData(data)
       }
+    }
+    else if (message.startsWith("OK players=")) {
+      setPlayersServer(message.substring(11))
     }
     // else if (message.startsWith("OK group=")) {
     //   setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
@@ -125,7 +139,7 @@ function App() {
     <>
       <main className='main'>
         <h1 className='title'>The Answer Protocol</h1>
-        <Header data={headerData} nickname={nickname} onLogout={handleLogout} />
+        <Header data={headerData} playersRoom={playersRoom} playersServer={playersServer} nickname={nickname} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
           <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
