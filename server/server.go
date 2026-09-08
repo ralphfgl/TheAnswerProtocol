@@ -36,6 +36,7 @@ type Player struct {
 	MaxHP          int
 	Status         string
 	InCombat       bool
+	CombatTarget   string
 	CmdWindowStart time.Time
 	CmdInWindow    int
 }
@@ -148,8 +149,8 @@ func (s *Server) handleConnection(conn net.Conn) {
 		Writer:   bufio.NewWriter(conn),
 		HP:       100,
 		MaxHP:    100,
-		Attack:   55,
-		Defense:  40,
+		Attack:   12,
+		Defense:  10,
 		Status:   "healthy",
 		InCombat: false,
 	}

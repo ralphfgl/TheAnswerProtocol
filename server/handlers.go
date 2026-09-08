@@ -120,6 +120,14 @@ func (s *Server) handleLook(p *Player) error {
 }
 
 func (s *Server) handleMove(p *Player, direction string) error {
+	// NOTE: added against moving in combat
+	p.Mu.Lock()
+	inCombat := p.InCombat
+	p.Mu.Unlock()
+	if inCombat {
+		s.sendError(p, 403, "CANNOT_MOVE_IN_COMBAT")
+		return nil
+	}
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {

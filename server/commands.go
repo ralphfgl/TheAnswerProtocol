@@ -218,6 +218,21 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleAttack(p, strings.Join(args, " "))
 		},
 	}
+	cr.commands["FLEE"] = &Command{
+		Name:         "FLEE",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("FLEE takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleFlee(p)
+		},
+	}
 	cr.commands["TALK"] = &Command{
 		Name:         "TALK",
 		MinArgs:      1,
