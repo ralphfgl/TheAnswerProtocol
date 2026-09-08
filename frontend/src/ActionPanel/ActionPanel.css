@@ -56,3 +56,9 @@
     background-color: #DDA15E;
     transition: 0.5s;
 }
+
+.group_list{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}

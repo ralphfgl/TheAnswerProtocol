@@ -285,7 +285,7 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal group list: %w", err)
 	}
-	s.sendResponse(p, string(jsonData))
+	s.sendResponse(p, fmt.Sprintf("OK %s", jsonData))
 	return nil
 }
 

@@ -15,7 +15,7 @@ function App() {
   const [inventoryData, setInventoryData] = useState({})
   const [headerData, setHeaderData] = useState({})
   const [talkData, setTalkData] = useState({})
-  const [groupData, setGroupData] = useState([])
+  const [groupData, setGroupData] = useState({})
 
 
   const parseMessage = (message: string) => {
@@ -31,21 +31,21 @@ function App() {
         setRoomData(data)
       }
       if (data.type == "status") {
-        console.log(data)
         setHeaderData(data)
       }
       if (data.type == "inventory") {
         setInventoryData(data)
       }
       if (data.type == "talk") {
-        console.log("Data")
-        console.log(data)
         setTalkData(data)
       }
+      if (data.type == "group") {
+        setGroupData(data)
+      }
     }
-    else if (message.startsWith("OK group=")){
-      setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
-    }
+    // else if (message.startsWith("OK group=")) {
+    //   setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
+    // }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
     }
