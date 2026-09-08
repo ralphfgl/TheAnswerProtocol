@@ -27,8 +27,8 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	p.Mu.Unlock()
 
-	s.Mu.Lock()
-	defer s.Mu.Unlock()
+	s.Mu.RLock()
+	defer s.Mu.RUnlock()
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {
@@ -99,16 +99,17 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.Mu.Unlock()
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
+	p.Mu.Unlock()
 	s.sendResponse(p, "OK "+string(jsonData))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s attacked %s for %d damage", p.Username, targetNPC.Name, playerDamage))
 	if npcDamage > 0 && !playerDefeated {
 		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s counter-attacked %s for %d damage", targetNPC.Name, p.Username, npcDamage))
-
 	}
 	s.logger.Info("Combat: player=%s npc=%s damage=%d counter=%d npc_hp=%d player_hp=%d", p.Username, targetNPC.Name, playerDamage, npcDamage, targetNPC.Stats["hp"], p.HP)
 	if npcDefeated {
 		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s defeated %s!", p.Username, targetNPC.Name))
 		s.removeNPCFromRoom(p.CurrentRoom, targetNpcID)
+		p.Mu.Lock()
 		p.InCombat = false
 		p.CombatTarget = ""
 		p.Status = "healthy"
@@ -118,6 +119,7 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		return nil
 	}
 	if playerDefeated {
+		p.Mu.Lock()
 		p.HP = p.MaxHP / 2
 		oldRoom := p.CurrentRoom
 		p.CurrentRoom = "start"
@@ -125,7 +127,6 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.CombatTarget = ""
 		p.Status = "healthy"
 		p.Mu.Unlock()
-
 		s.broadcastRoomEvent(oldRoom, fmt.Sprintf("EVT ROOM PRESENCE LEAVE %s", p.Username))
 		s.broadcastRoomEvent("start", fmt.Sprintf("EVT ROOM PRESENCE ENTER %s", p.Username))
 		s.sendResponse(p, "OK You lost and respawned at the start.")
@@ -133,7 +134,6 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		s.handleLook(p)
 		return nil
 	}
-	p.Mu.Unlock()
 	s.sendResponse(p, "OK Combat in progress. Attack again.")
 	return nil
 }
@@ -155,16 +155,16 @@ func (s *Server) removeNPCFromRoom(roomID, npcType string) {
 			break
 		}
 	}
-
 }
 
 func (s *Server) handleFlee(p *Player) error {
 	p.Mu.Lock()
 	if !p.InCombat {
+		p.Mu.Unlock()
 		s.sendError(p, 400, "NOT_IN_COMBAT")
 		return nil
 	}
-	if rand.Intn(100) < 75 {
+	if rand.Intn(100) < 50 {
 		p.InCombat = false
 		p.CombatTarget = ""
 		p.Status = "healthy"
@@ -176,7 +176,12 @@ func (s *Server) handleFlee(p *Player) error {
 		s.logger.Info("Player %s fled from combat", username)
 		return nil
 	}
+	room := p.CurrentRoom
+	username := p.Username
+	p.HP -= 5
 	p.Mu.Unlock()
 	s.sendResponse(p, "OK failed fleeing from combat")
+	s.broadcastRoomEvent(room, fmt.Sprintf("EVT ROOM COMBAT %s failed fleeing from combat and lost 5 HP!", username))
+	s.logger.Info("Player %s failed flee from combat and lost 5 HP", username)
 	return nil
 }

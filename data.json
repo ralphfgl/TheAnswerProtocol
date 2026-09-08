@@ -14,6 +14,10 @@
           {
             "npc_type": "guard",
             "count": 1
+          },
+          {
+            "npc_type": "giant_rat",
+            "count": 1
           }
         ],
         "items": []
