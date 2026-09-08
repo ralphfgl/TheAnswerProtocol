@@ -14,6 +14,7 @@ type World struct {
 	Locations []Location `json:"locations"`
 	Items     []Item     `json:"items"`
 	NPCs      []NPC      `json:"npcs"`
+	Quests    []Quest    `json:"quests"`
 }
 
 type Location struct {
@@ -44,26 +45,31 @@ type NPC struct {
 	Dialogue    []string       `json:"dialogue"`
 	Stats       map[string]int `json:"stats"`
 	Hostile     bool           `json:"hostile"`
+	QuestGiver  bool           `json:"quest_giver"`
+	Quest       *Quest         `json:"quest,omitempty"`
+}
+
+type Quest struct {
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	Giver            string `json:"giver"`
+	Type             string `json:"type"`
+	Target           string `json:"target"`
+	Description      string `json:"description"`
+	RewardItem       string `json:"reward_item"`
+	DialogueStart    string `json:"dialogue_start,omitempty"`
+	DialogueComplete string `json:"dialogue_complete"`
 }
 
 func parsing(fileName string) (GameWorld, error) {
 	data, err := os.ReadFile(fileName)
 	if err != nil {
-		return GameWorld{}, fmt.Errorf("Error reading file:", err)
+		return GameWorld{}, fmt.Errorf("Error reading file: %w", err)
 	}
 	var game GameWorld
 	err = json.Unmarshal(data, &game)
 	if err != nil {
-		return GameWorld{}, fmt.Errorf("Error parsing:", err)
+		return GameWorld{}, fmt.Errorf("Error parsing: %w", err)
 	}
-	// for _, loc := range game.World.Locations {
-	// 	fmt.Printf("[%s] %s: %s\n", loc.Id, loc.Name, loc.Description)
-	// }
-	// for _, item := range game.World.Items {
-	// 	fmt.Printf("[%s] %s (%t)\n", item.Id, item.Name, item.Obtainable)
-	// }
-	// for _, npc := range game.World.NPCs {
-	// 	fmt.Printf("[%s] %s (HP: %d)\n", npc.Id, npc.Name, npc.Stats["hp"])
-	// }
 	return game, nil
 }

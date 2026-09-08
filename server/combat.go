@@ -109,12 +109,14 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	if npcDefeated {
 		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s defeated %s!", p.Username, targetNPC.Name))
 		s.removeNPCFromRoom(p.CurrentRoom, targetNpcID)
+		// NOTE: quest completion
+		// if s.questProgression != nil {s.questProgression.HandleNPCDefeat(p, targetNpcID)}
 		p.Mu.Lock()
 		p.InCombat = false
 		p.CombatTarget = ""
 		p.Status = "healthy"
 		p.Mu.Unlock()
-		s.sendResponse(p, fmt.Sprintf("OK You defeated %s", targetNPC.Name))
+		s.sendResponse(p, fmt.Sprintf("OK combat=won looser=%s", targetNPC.Name))
 		s.handleLook(p)
 		return nil
 	}
@@ -129,12 +131,12 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.Mu.Unlock()
 		s.broadcastRoomEvent(oldRoom, fmt.Sprintf("EVT ROOM PRESENCE LEAVE %s", p.Username))
 		s.broadcastRoomEvent("start", fmt.Sprintf("EVT ROOM PRESENCE ENTER %s", p.Username))
-		s.sendResponse(p, "OK You lost and respawned at the start.")
+		s.sendResponse(p, "OK combat=lost")
 		s.logger.Info("Combat ended: player=%s defeated by %s, respawned at start", p.Username, targetNPC.Name)
 		s.handleLook(p)
 		return nil
 	}
-	s.sendResponse(p, "OK Combat in progress. Attack again.")
+	s.sendResponse(p, "OK combat=inprogress.")
 	return nil
 }
 
@@ -171,7 +173,7 @@ func (s *Server) handleFlee(p *Player) error {
 		room := p.CurrentRoom
 		username := p.Username
 		p.Mu.Unlock()
-		s.sendResponse(p, "OK flee from combat")
+		s.sendResponse(p, "OK flee=true")
 		s.broadcastRoomEvent(room, fmt.Sprintf("EVT ROOM COMBAT %s fled from combat!", username))
 		s.logger.Info("Player %s fled from combat", username)
 		return nil
@@ -180,7 +182,7 @@ func (s *Server) handleFlee(p *Player) error {
 	username := p.Username
 	p.HP -= 5
 	p.Mu.Unlock()
-	s.sendResponse(p, "OK failed fleeing from combat")
+	s.sendResponse(p, "OK flee=false")
 	s.broadcastRoomEvent(room, fmt.Sprintf("EVT ROOM COMBAT %s failed fleeing from combat and lost 5 HP!", username))
 	s.logger.Info("Player %s failed flee from combat and lost 5 HP", username)
 	return nil

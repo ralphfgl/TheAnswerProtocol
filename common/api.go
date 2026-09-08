@@ -1,7 +1,5 @@
+// Package common: API for client and server
 package common
-
-// API types that both server and client use
-// These are the "contract" between client and server
 
 type RoomInfo struct {
 	Id          string            `json:"id"`
@@ -48,4 +46,22 @@ type TalkResponse struct {
 	Type     string `json:"type"`
 	NPC      string `json:"npc"`
 	Dialogue string `json:"dialogue"`
+}
+
+type Quests struct {
+	ID               string `json:"id"`
+	Title            string `json:"title"`
+	Giver            string `json:"giver"`
+	Type             string `json:"type"`
+	Target           string `json:"target_item"`
+	Description      string `json:"description"`
+	RewardItem       string `json:"reward_item"`
+	DialogueStart    string `json:"dialogue_start,omitempty"`
+	DialogueComplete string `json:"dialogue_complete"`
+}
+
+type QuestResponse struct {
+	Type      string   `json:"type"`
+	QuestList []Quests `json:"quests"`
+	Count     int      `json:"count"`
 }

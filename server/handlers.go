@@ -31,12 +31,13 @@ func (s *Server) handleConnect(player *Player, username string) {
 		s.sendError(player, 201, "NAME_IN_USE")
 		return
 	}
-	// registration
 	player.Username = username
 	player.State = Authenticated
 	player.CurrentRoom = "start"
-	//player.Inventory
-	//player.HP = 100
+	// NOTE: quest
+	player.QuestData = &PlayerQuestData{
+		Quests: make(map[string]*QuestState),
+	}
 
 	s.players[username] = player
 
@@ -344,6 +345,9 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	s.Mu.Unlock()
 	// FIX :add logging?
 	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
+
+	// NOTE: quest
+	// if s.questProgression != nil {s.questProgression.HandleItemCollection(p, targetItemID)}
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
 	return nil

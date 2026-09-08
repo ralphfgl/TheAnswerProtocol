@@ -166,6 +166,7 @@
         "id": "guard",
         "name": "Village Guard",
         "role": "dialogue",
+        "quest_giver": true,
         "description": "A vigilant guard in polished chainmail watching over the square.",
         "dialogue": [
           "Stay safe, traveler. Keep your weapons sheathed in town.",
@@ -183,6 +184,7 @@
         "id": "merchant",
         "name": "Shop Keeper",
         "role": "trader",
+        "quest_giver": false,
         "description": "A cheerful merchant eager to trade goods with passing adventurers.",
         "dialogue": [
           "Welcome to the General Store!",
@@ -200,6 +202,7 @@
         "id": "blacksmith",
         "name": "Blacksmith Torin",
         "role": "quest-giver",
+        "quest_giver": true,
         "description": "A muscular dwarf covered in soot, shaping steel at his forge.",
         "dialogue": [
           "Need steel? I forge the finest blades around.",
@@ -217,6 +220,7 @@
         "id": "giant_rat",
         "name": "Giant Cellar Rat",
         "role": "enemy",
+        "quest_giver": false,
         "description": "A snarling rodent the size of a hound with sharp yellow incisors.",
         "dialogue": [
           "*Hisses aggressively and bares its teeth!*"
@@ -232,6 +236,7 @@
         "id": "skeleton",
         "name": "Crypt Skeleton",
         "role": "enemy",
+        "quest_giver": false,
         "description": "An ancient reanimated skeleton clutching a rusted spear.",
         "dialogue": [
           "*Bones clatter ominously as faint blue embers burn in its eye sockets.*"
@@ -250,26 +255,22 @@
         "title": "The Blacksmith's Heirloom",
         "giver": "blacksmith",
         "type": "fetch_item",
-        "target_item": "silver_amulet",
+        "target": "silver_amulet",
         "description": "Retrieve Blacksmith Torin's lost silver amulet from the Forgotten Crypt.",
-        "reward": {
-          "xp": 50,
-          "reward_item": "iron_sword",
-          "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!"
-        }
+        "reward_item": "iron_sword",
+        "dialogue_start": "My grandfather losts its amulet. Help me!",
+        "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!"
       },
       {
         "id": "clear_cellar",
         "title": "Cellar Trouble",
         "giver": "guard",
         "type": "defeat_npc",
-        "target_npc": "giant_rat",
+        "target": "giant_rat",
         "description": "Clear the Giant Cellar Rat from the tavern cellar to secure the village supplies.",
-        "reward": {
-          "xp": 30,
-          "reward_item": "ale",
-          "dialogue_complete": "Well done! The tavern cellar is safe again. Have a drink on us!"
-        }
+        "reward_item": "ale",
+        "dialogue_start": "I need help to kill that rat mate",
+        "dialogue_complete": "Well done! The tavern cellar is safe again. Have a drink on us!"
       }
     ]
   }
