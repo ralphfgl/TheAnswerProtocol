@@ -32,16 +32,12 @@ function ActionPanel({ onCommand, inventory, group }) {
             <p>My Inventory:</p>
             {inventory?.items?.length > 0
                 ?
-                <ul className='inventory_list'>
-                    {(inventory.items.map((value, index) => (
-                        <li key={index}>
-                            <div className='inventory_item'>
-                                <p>{value}</p>
-                                <button className='inventory_button' onClick={() => onCommand("DROP " + value)}>DROP</button>
-                            </div>
-                        </li>
-                    )))}
-                </ul>
+                (inventory.items.map((value, index) => (
+                    <div className='inventory_item'>
+                        <p>{value}</p>
+                        <button className='inventory_button' onClick={() => onCommand("DROP " + value)}>DROP</button>
+                    </div>
+                )))
                 :
                 <p>The inventory is empty</p>
             }
@@ -65,8 +61,8 @@ function ActionPanel({ onCommand, inventory, group }) {
                         const isMyGroup = group.my_group === value;
                         const hasNoGroup = !group.my_group;
                         return (
-                            <div className='group_list' key={index}>
-                                <p>{value}</p>
+                            <div className='group_item' key={index}>
+                                <p>{value.toUpperCase()}</p>
                                 {isMyGroup && <button className='action_button' onClick={() => leaveGroup()}>Leave</button>}
                                 {hasNoGroup && <button className='action_button' onClick={() => joinGroup(value)}>Join</button>}
                             </div>

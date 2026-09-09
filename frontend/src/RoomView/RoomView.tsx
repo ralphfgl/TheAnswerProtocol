@@ -20,16 +20,12 @@ function RoomView({ data, talk, attack, onCommand }) {
             <p>Items:</p>
             {data.items
                 ?
-                <ul className='items_list'>
-                    {(data.items.map((value, index) => (
-                        <li key={index}>
-                            <div className='item_item'>
-                                <p>{value}</p>
-                                <button className='item_button' onClick={() => onCommand("TAKE " + value)}>TAKE</button>
-                            </div>
-                        </li>
-                    )))}
-                </ul>
+                (data.items.map((value, index) => (
+                    <div className='item_card' key={index}>
+                        <p>{value.toUpperCase()}</p>
+                        <button className='item_button' onClick={() => onCommand("TAKE " + value)}>TAKE</button>
+                    </div>
+                )))
                 :
                 <p>There is no items</p>
             }
@@ -39,8 +35,8 @@ function RoomView({ data, talk, attack, onCommand }) {
                 data.npcs
                     ?
                     data.npcs.map((value, index) => (
-                        <div key={index}>
-                            <p>{value}</p>
+                        <div className='item_card' key={index}>
+                            <p>{value.toUpperCase()}</p>
                             <div className='room_actions'>
                                 <button className='room_button' onClick={() => onCommand("TALK " + value)}>TALK</button>
                                 <button className='room_button' onClick={() => onCommand("ATTACK " + value)}>ATTACK</button>

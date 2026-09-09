@@ -19,7 +19,7 @@
 .chat_form{
     display: flex;
     gap: 5px;
-    margin-top: 22.5px;
+    margin-top: 10px;
 }
 
 .chat_input{
@@ -30,7 +30,7 @@
 }
 
 .chat_logs{
-    height: 373px;
+    height: 525px;
     overflow-y: auto;
 }
 
