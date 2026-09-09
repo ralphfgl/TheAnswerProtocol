@@ -35,9 +35,9 @@ func (s *Server) handleConnect(player *Player, username string) {
 	player.State = Authenticated
 	player.CurrentRoom = "start"
 	// NOTE: quest
-	player.QuestData = &PlayerQuestData{
-		Quests: make(map[string]*QuestState),
-	}
+	// player.QuestData = &PlayerQuestData{
+	// 	Quests: make(map[string]*QuestState),
+	// }
 
 	s.players[username] = player
 
@@ -343,11 +343,11 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	}
 	p.Inventory = append(p.Inventory, targetItemID)
 	s.Mu.Unlock()
+	//s.progressQuest(p, "collect_item", itemID)
+
 	// FIX :add logging?
 	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 
-	// NOTE: quest
-	// if s.questProgression != nil {s.questProgression.HandleItemCollection(p, targetItemID)}
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
 	return nil
