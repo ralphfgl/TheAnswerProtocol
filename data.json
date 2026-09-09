@@ -18,9 +18,13 @@
           {
             "npc_type": "giant_rat",
             "count": 1
+          },
+          {
+            "npc_type": "blacksmith",
+            "count": 1
           }
         ],
-        "items": []
+        "items": ["test", "silver_amulet"]
       },
       {
         "id": "tavern",
@@ -78,8 +82,7 @@
             "count": 1
           }
         ],
-        "items": [
-          "silver_amulet"
+        "items": [ "silver_amulet"
         ]
       },
       {
@@ -125,11 +128,16 @@
           }
         ],
         "items": [
-          "iron_sword"
         ]
       }
     ],
     "items": [
+      {
+        "id": "test",
+        "name": "Test Item",
+        "description": "whatever",
+        "obtainable": true
+      },
       {
         "id": "ale",
         "name": "Frothy Ale",
@@ -167,6 +175,7 @@
         "name": "Village Guard",
         "role": "dialogue",
         "quest_giver": true,
+        "quest_id": "clear_cellar",
         "description": "A vigilant guard in polished chainmail watching over the square.",
         "dialogue": [
           "Stay safe, traveler. Keep your weapons sheathed in town.",
@@ -203,6 +212,7 @@
         "name": "Blacksmith Torin",
         "role": "quest-giver",
         "quest_giver": true,
+        "quest_id": "lost_amulet",
         "description": "A muscular dwarf covered in soot, shaping steel at his forge.",
         "dialogue": [
           "Need steel? I forge the finest blades around.",
@@ -249,8 +259,8 @@
         "hostile": true
       }
     ],
-    "quests": [
-      {
+    "quests": {
+      "lost_amulet":{
         "id": "lost_amulet",
         "title": "The Blacksmith's Heirloom",
         "giver": "blacksmith",
@@ -261,17 +271,17 @@
         "dialogue_start": "My grandfather losts its amulet. Help me!",
         "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!"
       },
-      {
+      "clear_cellar":{
         "id": "clear_cellar",
         "title": "Cellar Trouble",
         "giver": "guard",
         "type": "defeat_npc",
         "target": "giant_rat",
         "description": "Clear the Giant Cellar Rat from the tavern cellar to secure the village supplies.",
-        "reward_item": "ale",
+        "reward_item": "test",
         "dialogue_start": "I need help to kill that rat mate",
         "dialogue_complete": "Well done! The tavern cellar is safe again. Have a drink on us!"
       }
-    ]
+    }
   }
 }

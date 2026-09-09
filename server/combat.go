@@ -27,8 +27,8 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	p.Mu.Unlock()
 
-	s.Mu.RLock()
-	defer s.Mu.RUnlock()
+	// s.Mu.RLock()
+	// defer s.Mu.RUnlock()
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {
@@ -109,8 +109,8 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	if npcDefeated {
 		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s defeated %s!", p.Username, targetNPC.Name))
 		s.removeNPCFromRoom(p.CurrentRoom, targetNpcID)
-		// NOTE: quest completion
-		// if s.questProgression != nil {s.questProgression.HandleNPCDefeat(p, targetNpcID)}
+		fmt.Println("TESTTTSETTTSET")
+		s.progressQuest(p, "defeat_npc", targetNpcID)
 		p.Mu.Lock()
 		p.InCombat = false
 		p.CombatTarget = ""

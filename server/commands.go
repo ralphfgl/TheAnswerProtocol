@@ -248,49 +248,34 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			return s.handleTalk(p, strings.Join(args, " "))
 		},
 	}
-	// cr.commands["QUEST"] = &Command{
-	// 	Name:         "QUEST",
-	// 	MinArgs:      1,
-	// 	MaxArgs:      0,
-	// 	RequiresAuth: true,
-	// 	Validator: func(args []string) error {
-	// 		if len(args) < 1 {
-	// 			return fmt.Errorf("QUEST needs an NPC ID or name")
-	// 		}
-	// 		return nil
-	// 	},
-	// 	Handler: func(p *Player, args []string) error {
-	// 		return s.handleQuest(p, strings.Join(args, " "))
-	// 	},
-	// }
-	// cr.commands["QUESTS"] = &Command{
-	// 	Name:         "QUESTS",
-	// 	MinArgs:      0,
-	// 	MaxArgs:      0,
-	// 	RequiresAuth: true,
-	// 	Validator: func(args []string) error {
-	// 		if len(args) > 0 {
-	// 			return fmt.Errorf("QUESTS takes no arguments")
-	// 		}
-	// 		return nil
-	// 	},
-	// 	Handler: func(p *Player, args []string) error {
-	// 		return s.handleQuests(p, strings.Join(args, " "))
-	// 	},
-	// }
-	// cr.commands["ABANDON_QUEST"] = &Command{
-	// 	Name:         "ABANDON_QUEST",
-	// 	MinArgs:      1,
-	// 	MaxArgs:      1,
-	// 	RequiresAuth: true,
-	// 	Validator: func(args []string) error {
-	// 		if len(args) != 1 {
-	// 			return fmt.Errorf("ABANDON_QUEST needs a quest ID")
-	// 		}
-	// 		return nil
-	// 	},
-	// 	Handler: func(p *Player, args []string) error {
-	// 		return s.handleAbandonQuest(p, args[0])
-	// 	},
-	// }
+	cr.commands["QUEST"] = &Command{
+		Name:         "QUEST",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("QUEST needs an NPC ID or name")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleQuest(p, strings.Join(args, " "))
+		},
+	}
+	cr.commands["QUESTS"] = &Command{
+		Name:         "QUESTS",
+		MinArgs:      0,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) > 0 {
+				return fmt.Errorf("QUESTS takes no arguments")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleQuests(p)
+		},
+	}
 }
