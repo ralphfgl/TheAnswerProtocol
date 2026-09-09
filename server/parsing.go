@@ -11,10 +11,10 @@ type GameWorld struct {
 }
 
 type World struct {
-	Locations []Location `json:"locations"`
-	Items     []Item     `json:"items"`
-	NPCs      []NPC      `json:"npcs"`
-	Quests    []Quest    `json:"quests"`
+	Locations []Location       `json:"locations"`
+	Items     []Item           `json:"items"`
+	NPCs      []NPC            `json:"npcs"`
+	Quests    map[string]Quest `json:"quests"`
 }
 
 type Location struct {
@@ -46,7 +46,7 @@ type NPC struct {
 	Stats       map[string]int `json:"stats"`
 	Hostile     bool           `json:"hostile"`
 	QuestGiver  bool           `json:"quest_giver"`
-	Quest       *Quest         `json:"quest,omitempty"`
+	QuestID     string         `json:"quest_id,omitempty"`
 }
 
 type Quest struct {

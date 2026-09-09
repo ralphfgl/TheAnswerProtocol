@@ -49,20 +49,14 @@ type TalkResponse struct {
 	Dialogue string `json:"dialogue"`
 }
 
-type Quests struct {
-	ID               string `json:"id"`
-	Title            string `json:"title"`
-	Giver            string `json:"giver"`
-	Type             string `json:"type"`
-	Target           string `json:"target_item"`
-	Description      string `json:"description"`
-	RewardItem       string `json:"reward_item"`
-	DialogueStart    string `json:"dialogue_start,omitempty"`
-	DialogueComplete string `json:"dialogue_complete"`
+type QuestResponse struct {
+	Type   string `json:"type"`
+	Quest  any    `json:"quest"`
+	Status string `json:"status"`
 }
 
-type QuestResponse struct {
-	Type      string   `json:"type"`
-	QuestList []Quests `json:"quests"`
-	Count     int      `json:"count"`
+type QuestsResponse struct {
+	Type     string            `json:"type"`
+	QuestMap map[string]string `json:"quest_map"`
+	Count    int               `json:"count"`
 }

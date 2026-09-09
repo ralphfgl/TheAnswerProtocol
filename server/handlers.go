@@ -343,7 +343,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	}
 	p.Inventory = append(p.Inventory, targetItemID)
 	s.Mu.Unlock()
-	//s.progressQuest(p, "collect_item", itemID)
+	fmt.Println("SD:LKFJKL: ", targetItemID)
+	s.progressQuest(p, "fetch_item", targetItemID)
 
 	// FIX :add logging?
 	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
@@ -435,10 +436,6 @@ func (s *Server) handleStatus(p *Player) error {
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
-
-// func (s *Server) handleAttack(p *Player, npcRef string) error {
-// 	return nil
-// }
 
 func (s *Server) handleTalk(p *Player, npcRef string) error {
 	npcRef = strings.TrimSpace(npcRef)

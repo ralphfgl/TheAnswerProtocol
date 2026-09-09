@@ -39,7 +39,7 @@ type Player struct {
 	CombatTarget   string
 	CmdWindowStart time.Time
 	CmdInWindow    int
-	//QuestData      *PlayerQuestData
+	PlayerQuests   map[string]string // available active or completed
 }
 
 type Server struct {
@@ -145,15 +145,16 @@ func (s *Server) handleConnection(conn net.Conn) {
 	address := conn.RemoteAddr().String()
 	s.logger.Info("Client connection opened from %s", address)
 	player := &Player{
-		Conn:     conn,
-		State:    Connected,
-		Writer:   bufio.NewWriter(conn),
-		HP:       100,
-		MaxHP:    100,
-		Attack:   12,
-		Defense:  10,
-		Status:   "healthy",
-		InCombat: false,
+		Conn:         conn,
+		State:        Connected,
+		Writer:       bufio.NewWriter(conn),
+		HP:           100,
+		MaxHP:        100,
+		Attack:       12,
+		Defense:      10,
+		Status:       "healthy",
+		InCombat:     false,
+		PlayerQuests: make(map[string]string),
 	}
 	defer func() {
 		s.logger.Info("Client disconected: player=%s address=%s", player.Username, address)
@@ -239,32 +240,3 @@ func (s *Server) checkRapidConnections() {
 		s.logger.Warn("Possible rapid connection pattern: connections_last_minut=%d", len(recent))
 	}
 }
-
-// func (s *Server) findNPCInRoom(roomID, npcRef string) (*NPC, error) {
-// 	s.Mu.RLock()
-// 	defer s.Mu.RUnlock()
-//
-// 	// Find the room
-// 	var room *Location
-// 	for i := range s.world.World.Locations {
-// 		if s.world.World.Locations[i].Id == roomID {
-// 			room = &s.world.World.Locations[i]
-// 			break
-// 		}
-// 	}
-//
-// 	if room == nil {
-// 		return nil, fmt.Errorf("room not found")
-// 	}
-//
-// 	// Find NPC in room
-// 	for _, spawn := range room.Spawns {
-// 		for i, npc := range s.world.World.NPCs {
-// 			if npc.Id == spawn.NpcType || strings.EqualFold(npc.Name, npcRef) {
-// 				return &s.world.World.NPCs[i], nil
-// 			}
-// 		}
-// 	}
-//
-// 	return nil, fmt.Errorf("NPC not found in room")
-// }
