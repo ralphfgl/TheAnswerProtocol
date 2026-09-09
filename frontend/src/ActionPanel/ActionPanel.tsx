@@ -45,13 +45,16 @@ function ActionPanel({ onCommand, inventory, group }) {
                 :
                 <p>The inventory is empty</p>
             }
+            <hr className='line' />
             <p>Quests:</p>
+            <hr className='line' />
             <p>Actions:</p>
             <div className='action_list'>
                 {actions.map((value, index) => (
                     <button className='action_button' onClick={() => onCommand(value)} key={index}>{value}</button>
                 ))}
             </div>
+            <hr className='line' />
             <p>Groups:</p>
             <button className='action_button' onClick={() => createGroup()}>GROUP CREATE</button>
             {
@@ -70,7 +73,7 @@ function ActionPanel({ onCommand, inventory, group }) {
                         )
                     }))
                     :
-                    <p>No groups cread</p>
+                    <p>No groups created</p>
             }
         </section >
     )

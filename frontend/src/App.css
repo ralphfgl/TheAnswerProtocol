@@ -17,6 +17,7 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: 20px;
+  height: 590px;
 }
 
 .login_form{
@@ -48,4 +49,9 @@
 .login_button:hover{
   background-color: #DDA15E;
   transition: 0.5s;
+}
+
+.line{
+  color: #D4CCA5;
+  margin-inline: -10px;
 }

@@ -18,6 +18,7 @@ function App() {
   const [groupData, setGroupData] = useState({})
   const [playersServer, setPlayersServer] = useState(0)
   const [playersRoom, setPlayersRoom] = useState(0)
+  const [attackData, setAttackData] = useState("")
 
 
   const parseMessage = (message: string) => {
@@ -53,6 +54,9 @@ function App() {
       if (data.type == "group") {
         setGroupData(data)
       }
+      if (data.type == "combat") {
+        setHeaderData((prev) => ({ ...prev, hp: data.attacker_hp, status: data.status }))
+      }
     }
     else if (message.startsWith("OK players=")) {
       setPlayersServer(message.substring(11))
@@ -62,6 +66,9 @@ function App() {
     // }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
+    }
+    else if (message.startsWith("EVT ROOM COMBAT")) {
+      setAttackData(message.substring(15))
     }
   }
 
@@ -142,7 +149,7 @@ function App() {
         <Header data={headerData} playersRoom={playersRoom} playersServer={playersServer} nickname={nickname} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
-          <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
+          <RoomView data={roomData} talk={talkData} attack={attackData} onCommand={sendCommand} />
           <ActionPanel onCommand={sendCommand} inventory={inventoryData} group={groupData} />
         </div>
         {/* <form onSubmit={sendMessage}>

@@ -1,4 +1,4 @@
-import { act, useState } from 'react'
+import { useState } from 'react'
 import './ChatPanel.css'
 
 function ChatPanel({ onCommand, messages }) {
@@ -11,6 +11,23 @@ function ChatPanel({ onCommand, messages }) {
         onCommand(`CHAT ${activeTab} ${message}`)
         setMessage("")
     }
+
+    const filteredMessages = messages.filter((message) => {
+        if (activeTab === "GLOBAL") {
+            return message.includes("EVT GLOBAL CHAT")
+        }
+        if (activeTab === "ROOM") {
+            return message.includes("EVT ROOM CHAT")
+        }
+        if (activeTab === "GROUP") {
+            return message.includes("EVT GROUP CHAT")
+        }
+        if (activeTab === "SYSTEM") {
+            return !message.includes("CHAT")
+        }
+        return true
+    })
+
     return (
         <section className='chat_panel'>
             <h2 className='chat_title'>Communication and logs</h2>
@@ -19,18 +36,20 @@ function ChatPanel({ onCommand, messages }) {
                     <button className={activeTab == value.toUpperCase() ? 'tab_button--active' : 'tab_button'} key={index} onClick={() => setActiveTab(value.toUpperCase())}>{value}</button>
                 ))}
             </div>
-            <hr />
-            <p>Logs:</p>
+            <hr className='line' />
             <div className='chat_logs'>
-                {messages.map((value, index) => (
+                {filteredMessages.map((value, index) => (
                     <p key={index}>{value}</p>
                 ))}
             </div>
-            <hr />
-            <form className='chat_form' onSubmit={(event) => submitMessage(event)}>
-                <input className='chat_input' value={message} onChange={(e) => setMessage(e.target.value)} type="text" placeholder='Chat...' />
-                <button className='tab_button'>Send</button>
-            </form>
+            <hr className='line' />
+            {activeTab !== "SYSTEM" &&
+                <form className='chat_form' onSubmit={(event) => submitMessage(event)}>
+                    <input className='chat_input' value={message} onChange={(e) => setMessage(e.target.value)} type="text" placeholder='Chat...' />
+                    <button className='tab_button'>Send</button>
+                </form>
+            }
+
         </section>
     )
 }

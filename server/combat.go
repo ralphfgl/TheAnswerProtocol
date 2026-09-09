@@ -27,8 +27,8 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	p.Mu.Unlock()
 
-	s.Mu.RLock()
-	defer s.Mu.RUnlock()
+	// s.Mu.RLock()
+	// defer s.Mu.RUnlock()
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {
@@ -118,6 +118,7 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.Mu.Unlock()
 		s.sendResponse(p, fmt.Sprintf("OK combat=won looser=%s", targetNPC.Name))
 		s.handleLook(p)
+		s.handleStatus(p)
 		return nil
 	}
 	if playerDefeated {
