@@ -71,6 +71,10 @@ func NewServer(worldFile string, logger *Logger) (*Server, error) {
 		world:   &world,
 		logger:  logger,
 	}
+	if err := validate(world); err != nil {
+		s.logger.Error("Validation error: %v", err)
+		return nil, fmt.Errorf("failed to validate the world: %w", err)
+	}
 	s.cmdRegistry = NewCommandRegistry(s)
 	return s, nil
 }
