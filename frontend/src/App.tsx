@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react"
 import Header, { type HeaderData } from './Header/Header'
 import ChatPanel from './ChatPanel/ChatPanel'
 import RoomView, { type Data, type Talk } from './RoomView/RoomView'
-import ActionPanel, { type Group, type Inventory} from './ActionPanel/ActionPanel'
+import ActionPanel, { type Group, type Inventory } from './ActionPanel/ActionPanel'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -31,16 +31,9 @@ function App() {
     }
     else if (message.startsWith("OK {")) {
       let data = JSON.parse(message.substring(3))
-      console.log(data)
       if (data.type == "room") {
         setRoomData(data)
-        console.log(data.players.length)
-        if (data?.players?.length < 1) {
-          setPlayersRoom(1)
-        }
-        else {
-          setPlayersRoom(data.players?.length + 1)
-        }
+        setPlayersRoom((data.players?.length ?? 0) + 1)
       }
       if (data.type == "status") {
         setHeaderData(data)
@@ -65,7 +58,12 @@ function App() {
       setPlayersServer(parseInt(message.substring(11)))
     }
     else if (message.startsWith("ERR")) {
-      console.error(message.substring(3))
+      if (message.startsWith("ERR 406 NO_QUEST_AVAILABLE")) {
+        alert("The quest is unavailable")
+      }
+      else {
+        console.error(message.substring(3))
+      }
     }
     else if (message.startsWith("EVT ROOM COMBAT")) {
       setAttackData(message.substring(15))

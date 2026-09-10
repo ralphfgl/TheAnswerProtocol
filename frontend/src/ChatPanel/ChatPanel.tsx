@@ -10,7 +10,7 @@ function ChatPanel(props: ChatPanelProps) {
     const { onCommand, messages } = props
     const tabs = ["Global", "Room", "Group", "System"]
     const [message, setMessage] = useState("")
-    const [activeTab, setActiveTab] = useState("SYSTEM")
+    const [activeTab, setActiveTab] = useState("GLOBAL")
 
     const submitMessage = (event: SubmitEvent) => {
         event.preventDefault()
