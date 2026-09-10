@@ -89,7 +89,7 @@ func main() {
 			continue
 		}
 		client.Send(line)
-		if strings.ToUpper(line) == "QUIT" {
+		if line == "QUIT" {
 			break
 		}
 		fmt.Print("> ")

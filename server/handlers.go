@@ -22,33 +22,30 @@ func (s *Server) handleConnect(player *Player, username string) {
 		s.sendError(player, 400, "USERNAME_REQUIRED")
 		return
 	}
-	// check if username in use
 	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	// map lookup in go returns 2 value, the actual value and a boolean hat tell if the key exist
-	// comma separate the assignement from the condition
 	if _, exists := s.players[username]; exists {
+		s.Mu.Unlock()
 		s.sendError(player, 201, "NAME_IN_USE")
 		return
 	}
+	s.Mu.Unlock()
+	player.Mu.Lock()
 	player.Username = username
 	player.State = Authenticated
 	player.CurrentRoom = "start"
-	// NOTE: quest
-	// player.QuestData = &PlayerQuestData{
-	// 	Quests: make(map[string]*QuestState),
-	// }
-
+	player.Mu.Unlock()
+	s.Mu.Lock()
 	s.players[username] = player
-
+	playerCount := len(s.players)
+	s.Mu.Unlock()
 	s.sendResponse(player, "OK connected")
+	s.broadcastAll(fmt.Sprintf("EVT STATS players=%d", playerCount))
 	s.logger.Info("Player authenticated: username=%s address=%s", username, player.Conn.RemoteAddr())
 }
 
 func (s *Server) handleQuit(player *Player) {
 	s.sendResponse(player, "OK bye")
 	log.Printf("Player %s quit", player.Username)
-	// NOTE: the defer will clean up, this is redundunt
 	player.Conn.Close()
 }
 
@@ -121,7 +118,6 @@ func (s *Server) handleLook(p *Player) error {
 }
 
 func (s *Server) handleMove(p *Player, direction string) error {
-	// NOTE: added against moving in combat
 	p.Mu.Lock()
 	inCombat := p.InCombat
 	p.Mu.Unlock()
@@ -145,8 +141,7 @@ func (s *Server) handleMove(p *Player, direction string) error {
 	s.Mu.Lock()
 	p.CurrentRoom = targetRoomID
 	s.Mu.Unlock()
-	// FIX: add logg?
-	// s.logger.Info("World state changed: player=%s move from=%s to=%s", p.Username, oldRoom, targetRoomID)
+	s.logger.Info("World state changed: player=%s move from=%s to=%s", p.Username, oldRoom, targetRoomID)
 	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
 	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
 	s.sendResponse(p, fmt.Sprintf("OK room=%s", p.CurrentRoom))
@@ -202,11 +197,11 @@ func (s *Server) handleGroupCreate(p *Player) error {
 		return fmt.Errorf("already in a group")
 	}
 	s.Mu.Lock()
-	defer s.Mu.Unlock()
 	groupID := fmt.Sprintf("group_%d", s.nextGroupID)
 	s.nextGroupID++
 	s.groups[groupID] = []string{p.Username}
 	p.GroupID = groupID
+	s.Mu.Unlock()
 	s.sendResponse(p, fmt.Sprintf("OK group=%s", groupID))
 	if err := s.broadcastGroupList(); err != nil {
 		return err
@@ -299,7 +294,6 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 }
 
 func (s *Server) handleTake(p *Player, itemRef string) error {
-	// NOTE: could change the world structure to map instead of slice to access directly with key
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {
@@ -343,12 +337,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	}
 	p.Inventory = append(p.Inventory, targetItemID)
 	s.Mu.Unlock()
-	fmt.Println("SD:LKFJKL: ", targetItemID)
 	s.progressQuest(p, "fetch_item", targetItemID)
-
-	// FIX :add logging?
-	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
-
+	s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
 	return nil
@@ -411,8 +401,7 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	}
 	currentLocation.Items = append(currentLocation.Items, targetItemID)
 	s.Mu.Unlock()
-	// FIX :add logging?
-	// s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
+	s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
 	return nil

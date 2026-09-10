@@ -106,7 +106,6 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			}
 			return nil
 		},
-		// NOTE: return directly scope and message
 		Handler: func(p *Player, args []string) error {
 			scope := args[0]
 			message := strings.Join(args[1:], " ")

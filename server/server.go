@@ -174,7 +174,6 @@ func (s *Server) handleConnection(conn net.Conn) {
 		if line == "" {
 			continue
 		}
-		// NOTE: add parsing of the command here before handling
 		s.handleCommand(player, line)
 	}
 }
@@ -205,7 +204,9 @@ func (s *Server) removePlayer(player *Player) {
 	if player.Username != "" {
 		s.Mu.Lock()
 		delete(s.players, player.Username)
+		playerCount := len(s.players)
 		s.Mu.Unlock()
+		s.broadcastAll(fmt.Sprintf("EVT STATS players=%d", playerCount))
 		s.logger.Info("Player %s removed", player.Username)
 	}
 }

@@ -88,6 +88,7 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
+	s.logger.Info("QUEST_ACCEPT player=%s quest=%s npc=%s room=%s", p.Username, npcQuestID, targetNPC.Name, currentRoom)
 	s.sendResponse(p, "OK "+string(data))
 	return nil
 }
@@ -104,7 +105,11 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 			continue
 		}
 		p.PlayerQuests[id] = "completed"
+		s.logger.Info("QUEST_COMPLETE player=%s quest=%s type=%s target=%s reward=%s", p.Username, id, q.Type, q.Target, q.RewardItem)
 		if q.RewardItem != "" {
+			if q.RewardItem != "" {
+				s.logger.Info("QUEST_REWARD player=%s quest=%s item=%s", p.Username, id, q.RewardItem)
+			}
 			p.Inventory = append(p.Inventory, q.RewardItem)
 			for i, id := range p.Inventory {
 				if id == q.Target {
