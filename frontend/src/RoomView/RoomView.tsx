@@ -1,6 +1,35 @@
 import './RoomView.css'
 
-function RoomView({ data, talk, attack, onCommand }) {
+export interface RoomData {
+    id: string;
+    name: string;
+    description: string;
+    exits: {};
+    spawns: [];
+}
+
+export interface Data {
+    type: string;
+    room: RoomData | null;
+    npcs: string[];
+    items: string[];
+}
+
+export interface Talk {
+    type: string;
+    npc: string;
+    dialogue: string;
+}
+
+interface RoomViewProps {
+    data: Data | null
+    talk: Talk | null
+    attack: string,
+    onCommand: (command: string) => void
+}
+
+function RoomView(props: RoomViewProps) {
+    const { data, talk, attack, onCommand } = props
     if (!data || !data.room) {
         return <p>Loading...</p>
     }
@@ -41,6 +70,7 @@ function RoomView({ data, talk, attack, onCommand }) {
                                 <button className='room_button' onClick={() => onCommand("TALK " + value)}>TALK</button>
                                 <button className='room_button' onClick={() => onCommand("ATTACK " + value)}>ATTACK</button>
                                 <button className='room_button' onClick={() => onCommand("FLEE")}>FLEE</button>
+                                <button className='room_button' onClick={() => onCommand("QUEST " + value)}>QUEST</button>
                             </div>
                         </div>
                     ))

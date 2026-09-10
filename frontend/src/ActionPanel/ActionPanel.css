@@ -73,3 +73,19 @@
     border-radius: 20px;
     border: 1px solid #D4CCA5
 }
+
+.quest_item{
+    margin-bottom: 5px;
+    padding: 5px 10px;
+    border-radius: 20px;
+
+}
+
+.quest_active{
+    background-color: #d68b5c;
+}
+
+.quest_done{
+    background-color: #aef197;
+
+}

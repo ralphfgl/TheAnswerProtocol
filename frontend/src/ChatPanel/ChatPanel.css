@@ -19,7 +19,7 @@
 .chat_form{
     display: flex;
     gap: 5px;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
 .chat_input{

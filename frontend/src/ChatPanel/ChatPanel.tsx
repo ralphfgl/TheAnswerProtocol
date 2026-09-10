@@ -1,18 +1,24 @@
-import { useState } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import './ChatPanel.css'
 
-function ChatPanel({ onCommand, messages }) {
+interface ChatPanelProps {
+    onCommand: (command: string) => void;
+    messages: string[]
+}
+
+function ChatPanel(props: ChatPanelProps) {
+    const { onCommand, messages } = props
     const tabs = ["Global", "Room", "Group", "System"]
     const [message, setMessage] = useState("")
-    const [activeTab, setActiveTab] = useState("GLOBAL")
+    const [activeTab, setActiveTab] = useState("SYSTEM")
 
-    const submitMessage = (event) => {
+    const submitMessage = (event: SubmitEvent) => {
         event.preventDefault()
         onCommand(`CHAT ${activeTab} ${message}`)
         setMessage("")
     }
 
-    const filteredMessages = messages.filter((message) => {
+    const filteredMessages = messages.filter((message: string) => {
         if (activeTab === "GLOBAL") {
             return message.includes("EVT GLOBAL CHAT")
         }

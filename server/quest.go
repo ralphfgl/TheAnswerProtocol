@@ -64,6 +64,7 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
+	s.handleQuests(p)
 	s.sendResponse(p, "OK "+string(data))
 	return nil
 }
@@ -72,24 +73,34 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 	// p.Mu.Lock()
 	// defer p.Mu.Unlock()
 	for id, state := range p.PlayerQuests {
-		if state == "" {
+		if state != "active" {
 			continue
 		}
-		q := s.world.World.Quests[id]
-		if q.Type != eventType || q.Target != target {
+		q, exists := s.world.World.Quests[id]
+		if !exists || q.Type != eventType || q.Target != target {
 			continue
 		}
 		p.PlayerQuests[id] = "completed"
 		if q.RewardItem != "" {
 			p.Inventory = append(p.Inventory, q.RewardItem)
-			for i, id := range p.Inventory {
-				if id == q.Target {
+			for i, itemID := range p.Inventory {
+				if itemID == q.Target {
 					p.Inventory = append(p.Inventory[:i], p.Inventory[i+1:]...)
 					break
 				}
 			}
 		}
 		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", q.Title, q.RewardItem))
+		response := common.QuestResponse{
+			Type:   "quest",
+			Quest:  q,
+			Status: "completed",
+		}
+		if data, err := json.Marshal(response); err == nil {
+			s.sendResponse(p, "OK "+string(data))
+		}
+		s.handleInventory(p)
+		s.handleQuests(p)
 	}
 }
 

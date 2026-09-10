@@ -1,38 +1,38 @@
 import './App.css'
 import { useEffect, useRef, useState } from "react"
-import Header from './Header/Header'
+import Header, { type HeaderData } from './Header/Header'
 import ChatPanel from './ChatPanel/ChatPanel'
-import RoomView from './RoomView/RoomView'
-import ActionPanel from './ActionPanel/ActionPanel'
+import RoomView, { type Data, type Talk } from './RoomView/RoomView'
+import ActionPanel, { type Group, type Inventory} from './ActionPanel/ActionPanel'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [nickname, setNickname] = useState("")
-  const [messages, setMessages] = useState([])
-  const [inputValue, setInputValue] = useState("")
-  const wsRef = useRef(null)
-  const [roomData, setRoomData] = useState({})
-  const [inventoryData, setInventoryData] = useState({})
-  const [headerData, setHeaderData] = useState({})
-  const [talkData, setTalkData] = useState({})
-  const [groupData, setGroupData] = useState({})
-  const [playersServer, setPlayersServer] = useState(0)
-  const [playersRoom, setPlayersRoom] = useState(0)
+  const [nickname, setNickname] = useState<string>("")
+  const [messages, setMessages] = useState<string[]>([])
+  const wsRef = useRef<WebSocket | null>(null)
+  const [roomData, setRoomData] = useState<Data | null>(null)
+  const [inventoryData, setInventoryData] = useState<Inventory | null>(null)
+  const [headerData, setHeaderData] = useState<HeaderData | null>(null)
+  const [talkData, setTalkData] = useState<Talk | null>(null)
+  const [groupData, setGroupData] = useState<Group | null>(null)
+  const [playersServer, setPlayersServer] = useState<number>(0)
+  const [playersRoom, setPlayersRoom] = useState<number>(0)
   const [attackData, setAttackData] = useState("")
+  const [questData, setQuestData] = useState({})
 
 
   const parseMessage = (message: string) => {
     if (message.startsWith("OK connected")) {
       setIsAuthenticated(true)
-      wsRef.current.send("LOOK")
-      wsRef.current.send("STATUS")
-      wsRef.current.send("GROUP DISPLAY")
-      wsRef.current.send("WHO")
+      wsRef.current?.send("LOOK")
+      wsRef.current?.send("STATUS")
+      wsRef.current?.send("GROUP DISPLAY")
+      wsRef.current?.send("WHO")
     }
     else if (message.startsWith("OK {")) {
       let data = JSON.parse(message.substring(3))
       console.log(data)
-      if (data.room) {
+      if (data.type == "room") {
         setRoomData(data)
         console.log(data.players.length)
         if (data?.players?.length < 1) {
@@ -55,15 +55,15 @@ function App() {
         setGroupData(data)
       }
       if (data.type == "combat") {
-        setHeaderData((prev) => ({ ...prev, hp: data.attacker_hp, status: data.status }))
+        setHeaderData((prev) => (prev ? { ...prev, hp: data.attacker_hp, status: data.status } : prev));
+      }
+      if (data.type === "quest") {
+        setQuestData((prev) => ({ ...prev, [data.quest.id]: data }))
       }
     }
     else if (message.startsWith("OK players=")) {
-      setPlayersServer(message.substring(11))
+      setPlayersServer(parseInt(message.substring(11)))
     }
-    // else if (message.startsWith("OK group=")) {
-    //   setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
-    // }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
     }
@@ -74,7 +74,7 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
-    let reconnectTimeout;
+    let reconnectTimeout: number;
     function connect() {
       const websocket = new WebSocket("ws://localhost:8080/ws");
       wsRef.current = websocket;
@@ -110,26 +110,18 @@ function App() {
     };
   }, [])
 
-  const sendMessage = (e: Event) => {
-    e.preventDefault()
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-      wsRef.current.send(inputValue)
-    }
-    setInputValue("")
-  }
-
   const sendCommand = (command: string) => {
     console.log(command)
-    wsRef.current.send(command)
+    wsRef.current?.send(command)
   }
 
   const submitLogin = (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
-    wsRef.current.send("CONNECT " + nickname)
+    wsRef.current?.send("CONNECT " + nickname)
   }
 
   const handleLogout = () => {
-    wsRef.current.send("QUIT")
+    wsRef.current?.send("QUIT")
     setIsAuthenticated(false)
     setNickname("")
   }
@@ -150,15 +142,8 @@ function App() {
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
           <RoomView data={roomData} talk={talkData} attack={attackData} onCommand={sendCommand} />
-          <ActionPanel onCommand={sendCommand} inventory={inventoryData} group={groupData} />
+          <ActionPanel onCommand={sendCommand} inventory={inventoryData} group={groupData} questData={questData} />
         </div>
-        {/* <form onSubmit={sendMessage}>
-          <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
-          <button>Send</button>
-        </form>
-        {messages.map((value, index) => (
-          <p key={index}>{value}</p>
-        ))} */}
       </main>
     </>
   )
