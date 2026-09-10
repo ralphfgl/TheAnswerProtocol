@@ -150,6 +150,10 @@ func (s *Server) handleMove(p *Player, direction string) error {
 }
 
 func (s *Server) handleChat(p *Player, scope string, message string) error {
+	if !s.checkChatFlood(p) {
+		s.sendError(p, 429, "CHAT_RATE_LIMIT_EXCEEDED")
+		return nil
+	}
 	event := fmt.Sprintf("EVT %s CHAT %s %s", scope, p.Username, message)
 	switch scope {
 	case "GLOBAL":
@@ -208,6 +212,7 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	}
 	return nil
 }
+
 func (s *Server) handleGroupInvite(p *Player, args []string) error {
 	if p.GroupID == "" {
 		return fmt.Errorf("not in a group")
@@ -283,7 +288,7 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 	groupEvent := common.GroupInfo{
 		Type:      "group",
 		GroupList: slices.Collect(maps.Keys(s.groups)),
-		MyGroup: p.GroupID,
+		MyGroup:   p.GroupID,
 	}
 	jsonData, err := json.Marshal(groupEvent)
 	if err != nil {
@@ -318,17 +323,21 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 			break
 		}
 	}
-	// item not in the room
 	if targetItemID == "" {
 		s.sendError(p, 404, "ITEM_NOT_FOUND")
 		return nil
-		//return fmt.Errorf("item not found in room: %s", itemRef)
 	}
+	p.Mu.Lock()
+	if len(p.Inventory) >= p.maxInventory {
+		p.Mu.Unlock()
+		s.sendError(p, 409, "INVENTORY_FULL")
+		return nil
+	}
+	p.Mu.Unlock()
 	if !targetItem.Obtainable {
 		return fmt.Errorf("item cannot be taken: %s", targetItem.Name)
 	}
 	s.Mu.Lock()
-	// remove from the room
 	for i, id := range currentLocation.Items {
 		if id == targetItemID {
 			currentLocation.Items = append(currentLocation.Items[:i], currentLocation.Items[i+1:]...)
