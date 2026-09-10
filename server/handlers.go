@@ -469,7 +469,7 @@ func (s *Server) handleTalk(p *Player, npcRef string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-
+	s.logger.Info("NPC interaction: player=%s talked to npc=%s", p.Username, targetNPC.Name)
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }
