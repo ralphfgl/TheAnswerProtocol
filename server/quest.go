@@ -135,8 +135,9 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 		response := common.QuestResponse{
 			Type:   "quest",
 			Quest:  q,
-			Status: "completed",
+			Status: "test",
 		}
+		s.handleQuests(p)
 		if data, err := json.Marshal(response); err == nil {
 			s.sendResponse(p, "OK "+string(data))
 		}
@@ -185,10 +186,11 @@ func (s *Server) handleAbandonQuest(p *Player, questID string) error {
 	}
 	p.PlayerQuests[questID] = "abandoned"
 	p.Mu.Unlock()
-	response := common.QuestsResponse{
-		Type:     "quests",
-		QuestMap: p.PlayerQuests,
-		Count:    len(p.PlayerQuests),
+	questDef := s.world.World.Quests[questID]
+	response := common.QuestResponse{
+		Type:   "quests",
+		Quest:  questDef,
+		Status: "abandoned",
 	}
 	jsonData, err := json.Marshal(response)
 	if err != nil {
