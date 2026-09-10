@@ -17,7 +17,9 @@ func subtractOrZero(a, b int) int {
 }
 
 func (s *Server) handleAttack(p *Player, npcRef string) error {
+	npcRef = strings.TrimSpace(npcRef)
 	p.Mu.Lock()
+	currentRoom := p.CurrentRoom
 	if p.InCombat {
 		if p.CombatTarget != npcRef {
 			p.Mu.Unlock()
@@ -27,11 +29,10 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	p.Mu.Unlock()
 
-	// s.Mu.RLock()
-	// defer s.Mu.RUnlock()
+	s.Mu.RLock()
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
-		if s.world.World.Locations[i].Id == p.CurrentRoom {
+		if s.world.World.Locations[i].Id == currentRoom {
 			currentLocation = &s.world.World.Locations[i]
 			break
 		}
@@ -56,13 +57,16 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		}
 	}
 	if targetNpcID == "" {
+		s.Mu.RUnlock()
 		s.sendError(p, 404, "NPC_NOT_FOUND")
 		return nil
 	}
 	if !targetNPC.Hostile {
+		s.Mu.RUnlock()
 		s.sendError(p, 405, "NPC_NOT_HOSTILE")
 		return nil
 	}
+	s.Mu.RUnlock()
 	p.Mu.Lock()
 	if !p.InCombat {
 		p.InCombat = true
