@@ -169,6 +169,12 @@
         "name": "Silver Amulet",
         "description": "An engraved heirloom amulet belonging to Blacksmith Torin's family.",
         "obtainable": true
+      },
+      {
+        "id": "TIG",
+        "name": "TIG",
+        "description": "School TIG :)",
+        "obtainable": true
       }
     ],
     "npcs": [
@@ -295,7 +301,7 @@
         "type": "defeat_npc",
         "target": "giant_rat",
         "description": "Clear the Giant Cellar Rat from the tavern cellar to secure the village supplies.",
-        "reward_item": "test",
+        "reward_item": "TIG",
         "dialogue_start": "I need help to kill that rat mate",
         "dialogue_complete": "Well done! The tavern cellar is safe again. Have a drink on us!"
       }
