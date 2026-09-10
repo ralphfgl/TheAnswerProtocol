@@ -4,7 +4,7 @@ export interface RoomData {
     id: string;
     name: string;
     description: string;
-    exits: {};
+    exits: Record<string, string>;
     spawns: [];
 }
 

@@ -1,345 +1,371 @@
 *This activity has been created as part of the 42 curriculum by rfeghali, mmoskale.*
 
-Description
-section that clearly presents the activity, including its goal and a brief overview.
+## Description
 
-Instructions
-section containing any relevant information about compilation, installation, and/or execution.
+The Answer Protocol (TAP) is a multiplayer retro text-adventure engine built with a distributed client-server architecture. The project features a concurrent TCP game server written in Go, a lightweight command-line interface (CLI) client, and a modern single-page graphical interface (GUI) built with React 19, TypeScript, and Vite.
 
-Resources 
-section listing classic references related to the topic (documentation, articles, tutorials, etc.), as well as a description of how AI was used — specifying for which tasks and which parts of the activity.
+Players connect to a shared, persistent-feeling world loaded from static configuration files (`data.json`). The system supports synchronized multiplayer exploration, real-time multi-channel chat (Global, Room, Group), dynamic item manipulation without duplication, an interactive turn-based combat system, NPC dialogues, quest trees with prerequisites, and cooperative player grouping.
 
-Any required additions will be explicitly listed below.
-Architecture
-section explaining your server design choices (dispatcher/router vs inline handling, concurrency model, etc.).
-
-Protocol Implementation
-section documenting any deviations from RFC 42TAP and justifying your choices.
-
-Combat System
-section describing your turn-based combat mechanics, damage formulas, initiative order, and additional combat commands (DEFEND, FLEE, etc.).
+## Instructions
 
 
-World Design
-section describing your world layout, room connections, NPC roles, and item distribution.
+### Quick Start
 
-Server Logging
-section documenting your logging implementation, including log format, event types, output destinations, and how to monitor server behavior and detect abuse patterns.
+1. **Install dependencies**:
+```bash
+make install
+```
 
-Group Contributions
-section clearly indicating each team member’s responsibilities and contributions to different components (server, CLI client, GUI client, world design, etc.).
+2. **Launch the backend server** (Terminal 1):
+```bash
+make run-server
+```
 
-Building and Running
-section with detailed instructions for your chosen building tool and how to run each component (server, CLI client, GUI client).
+3. **Choose your client interface**:
+* **Option A: Graphical Web Client (GUI)**
+Start the WebSocket-to-TCP bridge proxy (Terminal 2):
+```bash
+make run-proxy
+```
 
-Testing
-section explaining how to test the multiplayer functionality, combat system, and quest mechanics.
 
+Start the frontend web application (Terminal 3):
+```bash
+make run-client-gui
+```
+
+Open `http://localhost:4173` in your browser.
+* **Option B: Terminal CLI Client** (Terminal 2):
+```bash
+go run ./cli-client/cli_client.go <username>
+# Or using make:
+make run-client
+```
+
+## Resources
+
+### References & Documentation
+
+* **RFC 42TAP Specification**: Internal project standard for status responses.
+* **Go Concurrency & Networking**: Official Go `net` package documentation, Go Memory Model, and synchronization primitives (`sync.Mutex`, `sync.RWMutex`).
+* [**Gorilla WebSocket**](https://pkg.go.dev/github.com/gorilla/websocket) for bidirectional streaming between browser clients and network sockets.
+* **React 19 Documentation**: Modern hooks, state handling, and component lifecycles.
+
+### AI Usage Disclosure
+
+* **World Topology Drafting**: Assisting in generating the topological room layout graph and creative lore descriptions in `data.json` to ensure loop and branch constraints were met.
+* **Readme structure**
 
 
 ## Architecture
+![screenshot](readme/architecture.jpg)
 
-The server is implemented in Go and uses TCP connections for communication between clients and the game server.
 
-The main architecture consists of:
+### Concurrency Model & Connection Lifecycle
 
-* A TCP server listening on port `8090`.
-* One goroutine per client connection.
-* A central `CommandRegistry` containing all supported commands.
-* Shared world state protected by server-level mutexes.
-* Per-player state protected by a player-level mutex.
-* World data loaded from `data.json`.
-* A shared logging system for server events, errors, and world-state changes.
+The server operates on an asynchronous goroutine-per-connection concurrency model:
 
-The main player state includes the player's current room, inventory, combat state, statistics, group membership, and quest states.
+* **Main Listener**: A master goroutine binds to port `:8090` and continuously accepts incoming TCP connections.
+* **Client Handlers**: Each accepted connection spawns an isolated goroutine running `handleConnection`. It manages non-blocking line-by-line reading with `bufio.Reader` and writes back via a thread-safe buffered writer (`bufio.Writer`).
+* **Synchronization**:
+* **Server-level Mutex (`sync.RWMutex`)**: Protects global maps (connected player registry `players`, active parties `groups`, and mutable world instances). Read locks (`RLock`) allow concurrent state inspections (`WHO`, `LOOK`, broadcasts), while write locks (`Lock`) guarantee safety during player additions, disconnections, and item movements.
+* **Player-level Mutex (`sync.Mutex`)**: Guarantees individual transaction safety across player attributes (health points, current location, combat flags, inventories, and active quests).
 
-The server starts by loading the world and then accepts TCP connections. Each connection is handled independently in a goroutine.
+
+* **Graceful Teardown**: Connection drops trigger defer statements that unregister the player, release locks, recalculate server metrics, clean up party memberships, and notify the remaining players in the room with presence events before socket closure.
+
+### Web Client Gateway (Proxy Bridge)
+
+Browsers cannot open arbitrary raw TCP sockets directly due to sandbox security policies. To allow the React client to communicate seamlessly with the TCP game server without modifying the core server's network stack:
+
+* A lightweight gateway proxy (`proxy/main.go`) listens on HTTP/WebSocket port `:8080/ws`.
+* Upon a client WebSocket handshake, it dials `tcp://localhost:8090` and establishes a full-duplex, bidirectional byte pipe translating WebSocket frames to newline-terminated TCP text lines and vice versa.
+
 
 ## Protocol Implementation
 
-Communication uses a line-based TCP protocol. Clients send commands as text lines and the server responds with either:
+Communication follows the line-based **RFC 42TAP** standard. Every transmission is UTF-8 encoded and terminated by a single newline character (`\n`).
 
+### Message Framing & Syntax
+
+1. **Client Request**:
 ```text
-OK ...
+<COMMAND> [ARGUMENTS...]\n
 ```
 
-or:
 
+2. **Server Success Response**:
 ```text
-ERR <code> <message>
+OK [DATA | JSON_PAYLOAD]\n
 ```
 
-The initial connection response is:
 
+3. **Server Error Response**:
 ```text
-OK hello proto=1
+ERR <code> <MESSAGE>\n
 ```
 
-The server uses a central command registry to validate commands, their arguments, and authentication requirements before executing handlers.
+4. **Server Asynchronous Broadcast Event**:
+```text
+EVT <SCOPE> <EVENT_TYPE> [PAYLOAD...]\n
+```
 
-Structured information such as rooms, inventory, combat results, NPC dialogue, and quests is returned using JSON structures defined in `common/api.go`.
+### Protocol Compliance & Structured Payloads
 
-## Error Codes
+The implementation strictly honors the core commands: `CONNECT`, `QUIT`, `LOOK`, `MOVE`, `CHAT`, `WHO`, `GROUP`, `TAKE`, `DROP`, `INVENTORY`, `STATUS`, `ATTACK`, `FLEE`, `TALK`, `QUEST`, `QUESTS`, and `ABANDON_QUEST`.
 
-The server uses numeric error codes to allow clients to distinguish between different categories of failures. The numeric code is followed by a descriptive error message.
+To keep both the CLI and modern graphical interfaces synchronized with complex game state without custom ad-hoc delimiters, structured responses return serialized JSON payloads after the `OK ` prefix (defined in `common/api.go`):
 
-| Code    | Error                        | Why it is used                                                                                                                                                        |
-| ------- | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **201** | `NAME_IN_USE`                | The requested username is already being used by another connected player.                                                                                             |
-| **301** | `NO_EXIT`                    | The player attempted to move in a direction for which the current room has no exit.                                                                                   |
-| **400** | General client/command error | Used when the command is invalid, arguments are missing/incorrect, the player is in an invalid state, or an action is not currently allowed.                          |
-| **401** | `NOT_AUTHENTICATED`          | Used when a command requiring authentication is sent before the player has successfully connected.                                                                    |
-| **403** | `CANNOT_MOVE_IN_COMBAT`      | Prevents a player from changing rooms while they are currently fighting an NPC.                                                                                       |
-| **404** | Resource not found           | Used when the requested NPC or item cannot be found in the current game context.                                                                                      |
-| **405** | `NPC_NOT_HOSTILE`            | Prevents the player from attacking an NPC that is not marked as hostile.                                                                                              |
-| **406** | Quest/action not available   | Used when a quest cannot be accepted, for example when an NPC has no quest, the quest has already been accepted, or it has already been completed.                    |
-| **409** | Conflict                     | Used when the requested action conflicts with the player's current state, such as trying to attack another NPC while already fighting a different NPC.                |
-| **500** | Server/internal error        | Used for unexpected command-handler errors or missing quest definitions, indicating that the problem is on the server side rather than caused by normal player input. |
+* `LOOK` returns `{"type":"room", "room":{...}, "players":[...], "items":[...], "npcs":[...]}`.
+* `INVENTORY` returns `{"type":"inventory", "items":[...]}`.
+* `STATUS` returns `{"type":"status", "hp":100, "max_hp":100, "status":"healthy"}`.
+* `GROUP DISPLAY` returns `{"type":"group", "group_list":[...], "my_group":"..."}`.
 
+### Error Codes
+
+The server uses standard three-digit numeric error codes:
+
+| Code | Identifier | Description |
+| --- | --- | --- |
+| **201** | `NAME_IN_USE` | The requested nickname is already registered by an active player. |
+| **301** | `NO_EXIT` | Attempted movement in an invalid direction with no exit. |
+| **400** | `INVALID_ARGS` / `UNKNOWN_COMMAND` | Malformed command syntax, wrong argument count, or unknown command. |
+| **401** | `NOT_AUTHENTICATED` | Attempted to issue gameplay commands prior to running `CONNECT <username>`. |
+| **403** | `CANNOT_MOVE_IN_COMBAT` | Room transitions are prohibited while actively engaged in combat. |
+| **404** | `ITEM_NOT_FOUND` / `NPC_NOT_FOUND` | Target entity does not exist in the current room or inventory. |
+| **405** | `NPC_NOT_HOSTILE` | Attack command issued against a passive or friendly NPC. |
+| **406** | `QUEST_*` / `NO_QUEST_AVAILABLE` | Quest criteria error (already accepted, completed, abandoned, or missing prerequisite). |
+| **409** | `INVENTORY_FULL` / `ALREADY_IN_COMBAT` | State conflict (e.g. inventory cap reached or attacking a second target). |
+| **413** | `MESSAGE_TOO_LONG` | Payload exceeded the maximum allowable message size (104 bytes buffer limit). |
+| **429** | `CHAT_RATE_LIMIT_EXCEEDED` | Chat flood threshold surpassed (>10 messages per minute). |
+| **500** | `COMMAND_ERROR` | Internal server execution error. |
+| **503** | `SERVER_FULL` | Maximum concurrent player connection capacity reached. |
+
+---
 
 ## Combat System
 
-Combat is turn-based at the command level. Each `ATTACK` command represents one combat exchange:
+Combat is turn-based and driven on-demand per player command exchange. Combat engagements are tracked at the player state level.
 
-1. The player attacks the NPC.
-2. Damage is calculated from attack minus defense.
-3. If the NPC survives, it counter-attacks.
-4. Both resulting HP values are sent to the client.
-5. Combat ends when either side is defeated.
+### Mechanics & Formula
 
-Damage uses:
+* **Initiation**: An encounter starts when a player issues `ATTACK <npc_id | npc_name>`. The server verifies that the target exists in the room and has `hostile: true`.
+* **Damage Calculation**:
 
-```text
-damage = max(1, attack - defense)
-```
+$$\text{Damage} = \max(1, \text{Attacker.Attack} - \text{Target.Defense})$$
 
-The player starts with 100 HP, 12 attack, and 10 defense.
 
-The player can also use `FLEE`. Fleeing has a 50% success chance. A failed attempt costs 5 HP.
+Damage can never fall below a minimum threshold of $1$.
+* **Exchange Loop**:
+1. The player strikes the enemy NPC, deducting calculated player damage from the NPC's health points.
+2. If the NPC survives, it immediately counter-attacks using the same formula: $\max(1, \text{NPC.Attack} - \text{Player.Defense})$.
+3. The server updates both combatants' HP, returns an `OK {"type":"combat", ...}` response, and broadcasts an `EVT ROOM COMBAT ...` action summary to all players in the room.
 
-The current implementation does not contain an initiative system or a `DEFEND` command. Therefore, the combat model is based on the order of the `ATTACK` command rather than initiative.
+
+
+### Defeat & Respawn
+
+* **NPC Defeat**: When an NPC drops to $0$ HP, it is removed from the room's spawn list. The server emits an `EVT ROOM KILL` event, triggers quest progress checks (`defeat_npc`), clears combat flags, and awards quest credit.
+* **Player Defeat**: When player HP reaches $0$, combat ends immediately. The player's state is reset to `healthy`, HP is restored to $50\%$ of maximum ($\text{MaxHP} / 2 = 50$), and the player is instantly relocated to the `start` room (`Village Square`). Appropriate leave/enter presence broadcasts are transmitted to the respective rooms.
+
+### Tactical Evasion (`FLEE`)
+
+A player engaged in combat can attempt to escape using `FLEE`:
+
+* **Success Rate**: $50\%$ chance (`rand.Intn(100) < 50`).
+* **Success Result**: Combat state is cleared, status returns to `healthy`, and the player remains in the room without penalty.
+* **Failure Penalty**: If evasion fails, the player loses $5$ HP and remains locked in combat with the target.
+
 
 ## Quest System
 
-Quests are given by NPCs marked as quest givers. The quest system stores each player's quest state as either `active`, `completed` or `abandoned`.
+Quests are managed per player and support non-linear narrative progression, objective validation, and chained dependencies.
 
-A quest cannot be taken twice:
+### Lifecycle & State Transitions
 
-* If the player has never taken it, the quest becomes `active`.
-* If it is already `active`, the server returns `QUEST_ALREADY_ACCEPTED`.
-* If it is already `completed`, the server returns `QUEST_ALREADY_COMPLETED`.
+```
+[Available on NPC] 
+       │
+       ▼ (QUEST <npc>)
+   [Active] ─────────────► [Abandoned] (ABANDON_QUEST <id>)
+       │
+       ▼ (Target conditions fulfilled)
+  [Completed] (Immediate reward distribution)
 
-A quest can be abandoned and once abandoned it cannot be taken again.
-
-There are two quest types:
-
-1. **Fetch item** – the player must obtain a specific item.
-2. **Defeat NPC** – the player must defeat a specific NPC.
-
-Quest completion is automatic. When the required objective is detected, the server changes the quest state to `completed`, gives the reward immediately, and sends a quest completion event to the player.
-
-### Quest Logging
-
-Quest state changes are logged so that quest progression can be audited.
-
-The server should record:
-
-```text
-QUEST_ACCEPT
-QUEST_COMPLETE
-QUEST_ABANDON
-QUEST_REWARD
 ```
 
-Example:
+* **Prerequisites (`requires`)**: Quests can specify dependencies. If a quest requires another quest ID that is not yet marked as `completed`, the server rejects acceptance with `ERR 406 QUEST_PREREQUISITE_NOT_MET`.
+* **Duplicate Protection**: Players cannot accept duplicate quests. Re-requesting an active quest yields `QUEST_ALREADY_ACCEPTED`, while completed quests return `QUEST_ALREADY_COMPLETED`.
+* **Permanent Abandonment**: Players can voluntarily abandon active quests using `ABANDON_QUEST <id>`. Once marked as `abandoned`, the quest is permanently locked out to prevent state exploits.
 
-```text
-INFO QUEST_ACCEPT player=Alice quest=lost_amulet npc=Blacksmith Torin room=blacksmith
-INFO QUEST_COMPLETE player=Alice quest=lost_amulet type=fetch_item target=silver_amulet reward=iron_sword
-INFO QUEST_REWARD player=Alice quest=lost_amulet item=iron_sword
-```
+### Objective Validation
 
-This makes it possible to determine when a player accepted a quest, when the objective was completed, and which reward was distributed and if the quest was abandoned.
+* **`fetch_item`**: Automatically verified when executing `TAKE`. Upon acquiring the required item, the quest resolves, the item target is consumed from the inventory, the reward item is deposited, and group/room completion events are emitted.
+* **`defeat_npc`**: Automatically verified when an NPC is slain during combat resolution.
+
 
 ## World Design
 
-The world is defined in `data.json`.
+The world configuration is defined in `data.json` and parsed into memory on boot.
 
-The map contains several interconnected locations, including:
+![screenshot](readme/design.jpg)
 
-* Village Square
-* The Prancing Pony
-* Tavern Cellar
-* Ancient Catacombs
-* Forgotten Crypt
-* Whispering Woods
-* General Store
-* Blacksmith & Armory
 
-NPCs have different roles, including:
+### Locations (8 Interconnected Rooms)
 
-* Quest giver
-* Dialogue NPC
-* Trader
-* Hostile enemy
+1. **Village Square (`start`)**: The central hub with cobblestone paths, fountain, and starting spawn point.
+2. **The Prancing Pony (`tavern`)**: Cozy rest stop north of the square; contains `ale`.
+3. **Tavern Cellar (`cellar`)**: Cool cellar connected east of the tavern; infested with a `giant_rat`.
+4. **Ancient Catacombs (`catacombs`)**: Subterranean passage linking the cellar to deep underground vaults and woods.
+5. **Forgotten Crypt (`crypt`)**: Burial chamber north of the catacombs guarded by an aggressive `skeleton`; holds the `silver_amulet`.
+6. **Whispering Woods (`woods`)**: Surface pine forest linking the catacombs back to the general store; contains `healing_herbs`.
+7. **General Store (`shop`)**: Trading outpost west of the square, completing the western loop.
+8. **Blacksmith & Armory (`armory`)**: Branching south off the square; home of the dwarf blacksmith forge.
 
-For example, the Village Guard and Blacksmith Torin are quest-giving NPCs, while the Giant Cellar Rat is a hostile enemy.
+### NPCs & Roles
 
-Item distribution is defined per location in the world data. Items can be marked as obtainable, allowing players to take them from the world.
+* **Village Guard (`guard`)**: Dialogue NPC and quest giver for `clear_cellar`.
+* **Shop Keeper (`merchant`)**: Friendly commercial dialogue NPC.
+* **Blacksmith Torin (`blacksmith`)**: Master artisan and quest giver for `lost_amulet`.
+* **Giant Cellar Rat (`giant_rat`)**: Hostile rodent ($15$ HP, $6$ Atk, $1$ Def).
+* **Crypt Skeleton (`skeleton`)**: Hostile reanimated warrior ($35$ HP, $12$ Atk, $4$ Def).
 
-The map layout was designed using Claude and then represented in the game's world configuration.
+### Quests
+
+1. **Cellar Trouble (`clear_cellar`)**:
+* *Giver*: Village Guard (`guard`)
+* *Type*: `defeat_npc` (Target: `giant_rat`)
+* *Reward*: `test` item
+
+
+2. **The Blacksmith's Heirloom (`lost_amulet`)**:
+* *Giver*: Blacksmith Torin (`blacksmith`)
+* *Requires*: Completion of `clear_cellar`
+* *Type*: `fetch_item` (Target: `silver_amulet`)
+* *Reward*: `iron_sword`
+
 
 ## Server Logging
 
-The server provides a centralized logger with three levels:
-
-* `INFO`
-* `WARN`
-* `ERROR`
-
-The logger uses a mutex so that simultaneous client goroutines do not write conflicting log messages.
-
-The server already logs:
-
-* Client connections and disconnections.
-* Commands received.
-* Authentication.
-* Error responses.
-* Combat activity.
-* World state change.
-* Quest progression.
-* Potential abuse pattern.
-
-Example:
+The server incorporates a thread-safe structured logger (`logging.go`) with ANSI color-coding and millisecond-accurate timestamps:
 
 ```text
-INFO WORLD_MOVE player=Alice from=start to=tavern direction=north
-INFO WORLD_ITEM_TAKE player=Alice item=silver_amulet room=crypt
-INFO WORLD_ITEM_DROP player=Alice item=silver_amulet room=start
-INFO NPC_TALK player=Alice npc=Blacksmith Torin room=blacksmith
-INFO QUEST_ACCEPT player=Alice quest=lost_amulet npc=Blacksmith Torin
-INFO QUEST_COMPLETE player=Alice quest=lost_amulet type=fetch_item target=silver_amulet reward=iron_sword
-INFO QUEST_REWARD player=Alice quest=lost_amulet item=iron_sword
-INFO COMBAT_ROUND player=Alice npc=giant_rat player_damage=7 npc_damage=2 npc_hp=13 player_hp=98
-INFO NPC_DEFEATED player=Alice npc=giant_rat
+17:42:01 INFO  Client connection opened from 127.0.0.1:54320
+17:42:05 INFO  Player authenticated: username=Hero address=127.0.0.1:54320
+17:42:10 INFO  Command received: player=Hero command=MOVE args=[north]
+17:42:10 INFO  World state changed: player=Hero move from=start to=tavern
+17:42:18 INFO  QUEST_ACCEPT player=Hero quest=clear_cellar npc=Village Guard room=start
+17:42:25 INFO  Combat: player=Hero npc=Giant Cellar Rat damage=11 counter=0 npc_hp=4 player_hp=100
+17:42:27 INFO  NPC_DEFEATED player=Hero npc=Giant Cellar Rat room=cellar
+17:42:27 INFO  QUEST_COMPLETE player=Hero quest=clear_cellar type=defeat_npc target=giant_rat reward=test
+17:42:30 WARN  LIMIT: Chat rate limit exceeded: player=Hero count=11
 ```
 
-These logs provide an audit trail for all important changes to the game world and player progression.
+### Logged Event Categories
+
+* **Connection Lifecycle**: Tracks incoming connections, remote IP addresses, successful authentications, and terminations.
+* **Commands & Dispatches**: Logs every incoming raw line command and associated parameters.
+* **World State Changes**: Real-time room transitions, item pick-ups (`TAKE`), and room drops (`DROP`).
+* **Combat Telemetry**: Attacker and counter-attack damage dealt, current remaining HP pools, victories, player deaths, and respawns.
+* **Quest Progression**: Full audit trail recording `QUEST_ACCEPT`, `QUEST_COMPLETE`, `QUEST_REWARD`, and quest abandonment.
+* **Security & Abuse Detection**:
+* **Command Flooding**: Triggers warnings if a client exceeds $20$ commands within a one-second sliding window.
+* **Chat Rate Limiting**: Enforces a strict threshold of $\le 10$ messages per minute. Exceeding messages are dropped with error code `429`.
+* **Rapid Connection Spikes**: Flags alerts when anomalous connection churn occurs (>2 connections per minute).
+* **Server Capacity**: Rejects connections beyond $100$ concurrent players with error code `503`.
+
+
+
+---
 
 ## Group Contributions
 
-* `rfeghali` – `CLI client and handlers implementation.`
+* **`rfeghali`**:
+* Designed and implemented the Go TCP server core networking pipeline, socket listeners, and connection lifecycle routines.
+* Built the central `CommandRegistry` router, input argument validators, and dispatch logic.
+* Implemented the turn-based combat calculations, damage resolution formulas, and fleeing mechanics.
+* Developed the Go terminal CLI client (`cli-client/cli_client.go`) with asynchronous background event polling and command prompt loops.
 
-* `mmoskale` – `<contribution>`
+
+* **`mmoskale`**:
+* Designed and developed the React 19 + TypeScript graphical user interface (GUI), including real-time panel layouts (Room View, Chat & Logs, Inventory, Actions, and Party status).
+* Built the WebSocket-to-TCP bridge proxy (`proxy/main.go`) to enable full-duplex communication between web browsers and raw TCP game sockets.
+* Implemented the world schema parser and integrity validator (`parsing.go`), ensuring bidirectional exits, reference integrity, and unique quest rewards.
 
 
 ## Building and Running
 
-### Server
-
-From the `server` directory:
+All targets are coordinated through the root `Makefile`:
 
 ```bash
-go run .
-```
+# Install toolchains, linter, and frontend packages
+make install
 
-The server listens on:
+# Start the TCP backend server (Port 8090)
+make run-server
 
-```text
-localhost:8090
-```
+# Start the WebSocket proxy bridge (Port 8080)
+make run-proxy
 
-### CLI Client
+# Run the CLI client
+make run-client
 
-From the `cli-client` directory:
+# Run the GUI web client in development mode (Vite HMR on Port 5173)
+make run-client-gui-dev
 
-```bash
-go run . <username>
-```
+# Build and preview the GUI client for production (Port 4173)
+make run-client-gui
 
-The client connects to the TCP server and allows the player to enter commands interactively.
+# Run linters across Go and TypeScript
+make lint
 
-### GUI
-
-
-```text
-<GUI startup command>
+# Remove dependencies and build artifacts
+make clean
 ```
 
 ## Testing
 
-The server should be tested using multiple clients to verify multiplayer state and concurrency.
+### 1. Multiplayer & Synchronization Test
 
-### Connection Tests
-
-* Connect a player successfully.
-* Attempt to connect with a username that is already in use.
-* Attempt authenticated commands before authentication.
-* Connect and disconnect multiple players.
-
-### Movement Tests
-
-* Move through valid exits.
-* Attempt to move through an invalid exit.
-* Attempt to move while in combat.
-* Verify that room presence events are sent correctly.
-
-### Item Tests
-
-* Take an obtainable item.
-* Attempt to take an item that is not present.
-* Drop an item.
-* Attempt to drop an item that is not in the inventory.
-* Verify item movement is logged.
-
-### NPC Tests
-
-* Talk to an NPC.
-* Attempt to talk to an NPC that is not present.
-* Attempt to attack a non-hostile NPC.
-* Verify NPC interactions are logged.
-
-### Combat Tests
-
-* Attack a hostile NPC.
-* Verify player and NPC damage.
-* Verify NPC counter-attacks.
-* Defeat an NPC.
-* Verify player defeat and respawn.
-* Test successful and failed fleeing.
-* Verify combat results are logged.
-
-### Quest Tests
-
-* Take a quest from a quest-giving NPC.
-* Attempt to take the same quest again.
-* Complete a fetch quest.
-* Complete a defeat-NPC quest.
-* Verify the quest automatically changes to `completed`.
-* Verify the reward is immediately added to the inventory.
-* Attempt to take a completed quest again.
-* Verify `QUEST_ACCEPT`, `QUEST_COMPLETE`, and `QUEST_REWARD` logs are generated.
-
-### Logging Tests
-
-For every world-state-changing action, verify that a corresponding log entry is produced.
-
-At minimum:
-
-```text
-MOVE       -> WORLD_MOVE
-TAKE       -> WORLD_ITEM_TAKE
-DROP       -> WORLD_ITEM_DROP
-TALK       -> NPC_TALK
-QUEST      -> QUEST_ACCEPT
-completion -> QUEST_COMPLETE
-reward     -> QUEST_REWARD
-ATTACK     -> COMBAT_ROUND
-defeat     -> NPC_DEFEATED / PLAYER_DEFEATED
+1. Launch the server and proxy:
+```bash
+make run-server
+make run-proxy
 ```
 
-This ensures the server provides an auditable record of player actions and important changes to the shared game state.
+
+2. In separate terminals, open two clients (e.g. one GUI at `http://localhost:5173` and one CLI via `go run ./cli-client/cli_client.go Bob`).
+3. Connect with unique nicknames on both.
+4. Verify that:
+* Both clients receive `EVT STATS players=2`.
+* When one player moves into the other player's room, an `EVT ROOM PRESENCE ENTER <name>` event is displayed in real time.
+* Sending a message in `ROOM` chat only displays to players in the same room.
+* Sending a message in `GLOBAL` chat broadcasts to both clients across different locations.
 
 
-bufio.Reader -> low level bufferred byte/stream reading. No token size limit. Keeps the delimiter in  the string
-bufio.Scanner -> tokenization (splitting by line , word ..), default 64 kb max token size. Strips the delimiter from the token.
+### 2. Item Exclusivity (No Duplication)
+
+1. Navigate both players to `start` (`Village Square`).
+2. Player 1 executes `TAKE silver_amulet`.
+3. Check Player 2's room view: the amulet disappears instantly from the room.
+4. Player 2 attempts `TAKE silver_amulet` $\rightarrow$ receives `ERR 404 ITEM_NOT_FOUND`.
+5. Player 1 executes `DROP silver_amulet`.
+6. The item reappears immediately in Player 2's room view and can now be picked up by Player 2.
+
+### 3. Combat & Death Loop Test
+
+1. Navigate to the `cellar` where the `giant_rat` spawns.
+2. Issue `ATTACK giant_rat`.
+3. Observe player damage, enemy HP reduction, counter-attack damage, and synchronized room combat broadcasts.
+4. Attempt `MOVE north` while fighting $\rightarrow$ verifies `ERR 403 CANNOT_MOVE_IN_COMBAT`.
+5. Issue `FLEE` $\rightarrow$ verifies $50\%$ chance of escape or $5$ HP damage penalty.
+6. Continue attacking until the rat reaches $0$ HP $\rightarrow$ rat is removed from the room, `EVT ROOM KILL` is broadcast, and quest completion triggers.
+
+### 4. Quest Dependency & Progression Test
+
+1. Talk to Blacksmith Torin: `QUEST blacksmith` $\rightarrow$ rejected with `ERR 406 QUEST_PREREQUISITE_NOT_MET` because `clear_cellar` is required first.
+2. Talk to the Village Guard: `QUEST guard` $\rightarrow$ accepts quest `clear_cellar`.
+3. Defeat the `giant_rat` in the cellar $\rightarrow$ quest automatically finishes, distributing the `test` item.
+4. Return to the Blacksmith: `QUEST blacksmith` $\rightarrow$ now succeeds, setting `lost_amulet` to active.
+5. Retrieve the `silver_amulet` from the crypt $\rightarrow$ quest detects item pickup, awards `iron_sword`, consumes the amulet from inventory, and updates status to completed.
+6. Attempt to take the quest again $\rightarrow$ rejected with `ERR 406 QUEST_ALREADY_COMPLETED`.

@@ -14,7 +14,7 @@ export interface Group {
 
 export interface QuestStatus {
     type: string;
-    quest_map: {}
+    quest_map: Record<string, string>;
     count: number;
 }
 
@@ -41,7 +41,7 @@ interface ActionPanelProps {
     onCommand: (command: string) => void;
     inventory: Inventory | null
     group: Group | null
-    questData: QuestData | {}
+    questData: QuestData | Record<string, QuestData>
 }
 
 function ActionPanel(props: ActionPanelProps) {

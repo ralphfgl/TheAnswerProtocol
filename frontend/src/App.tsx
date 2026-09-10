@@ -30,7 +30,7 @@ function App() {
       wsRef.current?.send("WHO")
     }
     else if (message.startsWith("OK {")) {
-      let data = JSON.parse(message.substring(3))
+      const data = JSON.parse(message.substring(3))
       if (data.type == "room") {
         setRoomData(data)
         setPlayersRoom((data.players?.length ?? 0) + 1)
