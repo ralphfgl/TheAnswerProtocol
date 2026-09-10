@@ -54,12 +54,22 @@ function App() {
         setQuestData((prev) => ({ ...prev, [data.quest.id]: data }))
       }
     }
-    else if (message.startsWith("OK players=")) {
-      setPlayersServer(parseInt(message.substring(11)))
+    else if (message.startsWith("EVT STATS players=")) {
+      setPlayersServer(parseInt(message.substring(18)))
+      wsRef.current?.send("LOOK")
+    }
+    else if (message.startsWith("EVT ROOM ITEM_TAKEN") || message.startsWith("EVT ROOM ITEM_DROP")) {
+      wsRef.current?.send("LOOK")
     }
     else if (message.startsWith("ERR")) {
       if (message.startsWith("ERR 406 NO_QUEST_AVAILABLE")) {
         alert("The quest is unavailable")
+      }
+      else if (message.startsWith("ERR 406 QUEST_ALREADY_ABANDONED")) {
+        alert("The quest is abandoned")
+      }
+      else if (message.startsWith("ERR 406 QUEST_PREREQUISITE_NOT_MET")) {
+        alert("You need to complete other quest first")
       }
       else {
         console.error(message.substring(3))
@@ -67,6 +77,10 @@ function App() {
     }
     else if (message.startsWith("EVT ROOM COMBAT")) {
       setAttackData(message.substring(15))
+    }
+    else if (message.startsWith("EVT ROOM KILL")) {
+      setAttackData(message.substring(13))
+      wsRef.current?.send("LOOK")
     }
   }
 

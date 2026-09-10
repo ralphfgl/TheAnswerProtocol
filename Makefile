@@ -1,4 +1,5 @@
 install:
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s v2.13.2
 	cd frontend && npm install
 run-server:
 	cd server && go run server.go parsing.go commands.go handlers.go events.go combat.go logging.go quest.go
@@ -15,3 +16,4 @@ lint:
 	cd frontend && npm run lint
 clean:
 	rm -rf frontend/node_modules
+	rm -rf bin
