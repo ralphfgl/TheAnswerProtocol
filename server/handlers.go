@@ -208,7 +208,6 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	}
 	return nil
 }
-
 func (s *Server) handleGroupInvite(p *Player, args []string) error {
 	if p.GroupID == "" {
 		return fmt.Errorf("not in a group")
@@ -284,12 +283,13 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 	groupEvent := common.GroupInfo{
 		Type:      "group",
 		GroupList: slices.Collect(maps.Keys(s.groups)),
+		MyGroup: p.GroupID,
 	}
 	jsonData, err := json.Marshal(groupEvent)
 	if err != nil {
 		return fmt.Errorf("failed to marshal group list: %w", err)
 	}
-	s.sendResponse(p, string(jsonData))
+	s.sendResponse(p, fmt.Sprintf("OK %s", jsonData))
 	return nil
 }
 
@@ -341,6 +341,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
+	s.handleLook(p)
+	s.handleInventory(p)
 	return nil
 }
 
@@ -404,6 +406,8 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
+	s.handleLook(p)
+	s.handleInventory(p)
 	return nil
 }
 

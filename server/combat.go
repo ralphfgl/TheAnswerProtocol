@@ -122,6 +122,7 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.Mu.Unlock()
 		s.sendResponse(p, fmt.Sprintf("OK combat=won looser=%s", targetNPC.Name))
 		s.handleLook(p)
+		s.handleStatus(p)
 		return nil
 	}
 	if playerDefeated {

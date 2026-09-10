@@ -6,7 +6,7 @@
     background-color: #FEFAE0;
     padding: 10px;
     border-radius: 20px;
-    width: 400px;
+    width: 450px;
     border: 2px solid #D4CCA5;
 }
 
@@ -47,10 +47,6 @@
     width: 80%;
 }
 
-.items_list{
-    padding-left: 20px;
-}
-
 .item_item{
     display: flex;
     gap: 5px;
@@ -71,4 +67,24 @@
 .item_button:hover{
     background-color: #DDA15E;
     transition: 0.5s;
+}
+
+.item_card{
+    background-color: #fef2c1;
+    padding: 0px 10px 10px 10px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    border: 1px solid #D4CCA5
+
+}
+
+.item_card{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #fef2c1;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    border: 1px solid #D4CCA5
 }

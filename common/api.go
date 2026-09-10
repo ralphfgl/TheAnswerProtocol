@@ -24,6 +24,7 @@ type InventoryInfo struct {
 type GroupInfo struct {
 	Type      string   `json:"type"`
 	GroupList []string `json:"group_list"`
+	MyGroup string `json:"my_group"`
 }
 
 type StatusInfo struct {

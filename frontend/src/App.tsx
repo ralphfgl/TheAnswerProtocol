@@ -15,6 +15,10 @@ function App() {
   const [inventoryData, setInventoryData] = useState({})
   const [headerData, setHeaderData] = useState({})
   const [talkData, setTalkData] = useState({})
+  const [groupData, setGroupData] = useState({})
+  const [playersServer, setPlayersServer] = useState(0)
+  const [playersRoom, setPlayersRoom] = useState(0)
+  const [attackData, setAttackData] = useState("")
 
 
   const parseMessage = (message: string) => {
@@ -22,28 +26,49 @@ function App() {
       setIsAuthenticated(true)
       wsRef.current.send("LOOK")
       wsRef.current.send("STATUS")
+      wsRef.current.send("GROUP DISPLAY")
+      wsRef.current.send("WHO")
     }
     else if (message.startsWith("OK {")) {
       let data = JSON.parse(message.substring(3))
       console.log(data)
       if (data.room) {
         setRoomData(data)
+        console.log(data.players.length)
+        if (data?.players?.length < 1) {
+          setPlayersRoom(1)
+        }
+        else {
+          setPlayersRoom(data.players?.length + 1)
+        }
       }
       if (data.type == "status") {
-        console.log(data)
         setHeaderData(data)
       }
       if (data.type == "inventory") {
         setInventoryData(data)
       }
       if (data.type == "talk") {
-        console.log("Data")
-        console.log(data)
         setTalkData(data)
       }
+      if (data.type == "group") {
+        setGroupData(data)
+      }
+      if (data.type == "combat") {
+        setHeaderData((prev) => ({ ...prev, hp: data.attacker_hp, status: data.status }))
+      }
     }
+    else if (message.startsWith("OK players=")) {
+      setPlayersServer(message.substring(11))
+    }
+    // else if (message.startsWith("OK group=")) {
+    //   setGroupData((prevGroup) => [...prevGroup, message.substring(9)])
+    // }
     else if (message.startsWith("ERR")) {
       console.error(message.substring(3))
+    }
+    else if (message.startsWith("EVT ROOM COMBAT")) {
+      setAttackData(message.substring(15))
     }
   }
 
@@ -121,11 +146,11 @@ function App() {
     <>
       <main className='main'>
         <h1 className='title'>The Answer Protocol</h1>
-        <Header data={headerData} nickname={nickname} onLogout={handleLogout} />
+        <Header data={headerData} playersRoom={playersRoom} playersServer={playersServer} nickname={nickname} onLogout={handleLogout} />
         <div className='panel_list'>
           <ChatPanel onCommand={sendCommand} messages={messages} />
-          <RoomView data={roomData} talk={talkData} onCommand={sendCommand} />
-          <ActionPanel onCommand={sendCommand} inventory={inventoryData} />
+          <RoomView data={roomData} talk={talkData} attack={attackData} onCommand={sendCommand} />
+          <ActionPanel onCommand={sendCommand} inventory={inventoryData} group={groupData} />
         </div>
         {/* <form onSubmit={sendMessage}>
           <input value={inputValue} onChange={(e) => setInputValue(e.target.value)} />

@@ -2,7 +2,7 @@
     background-color: #FEFAE0;
     padding: 10px;
     border-radius: 20px;
-    width: 400px;
+    width: 450px;
     border: 2px solid #D4CCA5;
 }
 
@@ -40,6 +40,11 @@
     gap: 5px;
     align-items: center;
     justify-content: space-between;
+    background-color: #fef2c1;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    border: 1px solid #D4CCA5
 }
 
 .inventory_button{
@@ -55,4 +60,16 @@
 .inventory_button:hover{
     background-color: #DDA15E;
     transition: 0.5s;
+}
+
+.group_item{
+    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fef2c1;
+    padding: 5px 10px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+    border: 1px solid #D4CCA5
 }
