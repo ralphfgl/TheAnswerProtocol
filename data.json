@@ -269,7 +269,8 @@
         "description": "Retrieve Blacksmith Torin's lost silver amulet from the Forgotten Crypt.",
         "reward_item": "iron_sword",
         "dialogue_start": "My grandfather losts its amulet. Help me!",
-        "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!"
+        "dialogue_complete": "My grandfather's amulet! Thank you, adventurer. Take this sword as your reward!",
+        "requires":"clear_cellar"
       },
       "clear_cellar":{
         "id": "clear_cellar",
