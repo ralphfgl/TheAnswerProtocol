@@ -35,9 +35,7 @@
           "east": "cellar"
         },
         "spawns": [],
-        "items": [
-          "ale"
-        ]
+        "items": [ "ale"]
       },
       {
         "id": "cellar",
@@ -82,8 +80,7 @@
             "count": 1
           }
         ],
-        "items": [ "silver_amulet"
-        ]
+        "items": [ "silver_amulet"]
       },
       {
         "id": "woods",
@@ -93,7 +90,12 @@
           "east": "catacombs",
           "south": "shop"
         },
-        "spawns": [],
+        "spawns": [
+          {
+            "npc_type": "bigboss",
+            "count": 1
+          }
+        ],
         "items": [
           "healing_herbs"
         ]
@@ -255,6 +257,20 @@
           "hp": 35,
           "attack": 12,
           "defense": 4
+        },
+        "hostile": true
+      },
+      {
+        "id": "bigboss",
+        "name": "Big Boss",
+        "role": "enemy",
+        "quest_giver": false,
+        "description": "He can one shot you.",
+        "dialogue": ["Run"],
+        "stats": {
+          "hp": 1000,
+          "attack": 1000,
+          "defense": 1000
         },
         "hostile": true
       }

@@ -10,9 +10,8 @@ import (
 )
 
 type CLIClient struct {
-	conn     net.Conn
-	reader   *bufio.Reader
-	username string
+	conn   net.Conn
+	reader *bufio.Reader
 }
 
 func NewCLIClient(server string) (*CLIClient, error) {

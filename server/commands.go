@@ -36,7 +36,7 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 		RequiresAuth: false,
 		Validator: func(args []string) error {
 			if len(args) != 1 {
-				return fmt.Errorf("CONNECT needs exactly one username.")
+				return fmt.Errorf("CONNECT needs exactly one username")
 			}
 			return nil
 		},

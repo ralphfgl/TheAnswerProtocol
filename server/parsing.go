@@ -71,7 +71,6 @@ func (e ValidationErrors) Error() string {
 
 func validate(g GameWorld) error {
 	var errors ValidationErrors
-
 	// Build lookup maps
 	locationMap := make(map[string]Location)
 	for _, loc := range g.World.Locations {
@@ -115,7 +114,6 @@ func validate(g GameWorld) error {
 	// 4. Validate NPC references
 	usedItems := make(map[string]bool) // Track where items are used (location or quest reward)
 	usedNPCs := make(map[string]bool)  // Track where NPCs are used (location spawns or quest giver)
-
 	for _, loc := range g.World.Locations {
 		for _, itemId := range loc.Items {
 			usedItems[itemId] = true
@@ -130,7 +128,6 @@ func validate(g GameWorld) error {
 		if questId != quest.ID {
 			errors = append(errors, fmt.Sprintf("Quest map key '%s' doesn't match quest ID '%s'", questId, quest.ID))
 		}
-
 		// Check quest giver exists
 		if _, exists := npcMap[quest.Giver]; !exists {
 			errors = append(errors, fmt.Sprintf("Quest '%s' references non-existent NPC giver '%s'", questId, quest.Giver))

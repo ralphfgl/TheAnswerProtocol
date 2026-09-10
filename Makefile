@@ -1,5 +1,5 @@
 install:
-	curl -sSfL https://golangci-lint.run/install.sh | sh -s v2.13.2
+	curl -sSfL https://golangci-lint.run/install.sh | sh -s -- -b $(go env GOPATH)/bin v2.13.2
 	cd frontend && npm install
 run-server:
 	cd server && go run server.go parsing.go commands.go handlers.go events.go combat.go logging.go quest.go
@@ -12,7 +12,7 @@ run-client-gui:
 run-proxy:
 	cd proxy && go run main.go
 lint:
-	golangci-lint run
+	$(HOME)/go/bin/golangci-lint run
 	cd frontend && npm run lint
 clean:
 	rm -rf frontend/node_modules

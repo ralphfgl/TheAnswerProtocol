@@ -1,0 +1,17 @@
+version: "2"
+
+run:
+  # Optional: force a timeout limit if the tool runs too long
+  timeout: 5m
+
+issues:
+  max-same-issues: 0
+  max-issues-per-linter: 0
+
+linters:
+  exclusions:
+    rules:
+      - linters:
+          - errcheck
+        text: "Error return value of .* is not checked"
+

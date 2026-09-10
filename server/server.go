@@ -46,10 +46,10 @@ type Player struct {
 }
 
 type Server struct {
-	players           map[string]*Player
-	Mu                sync.RWMutex
-	cmdRegistry       *CommandRegistry
-	playerLocations   map[string]string
+	players     map[string]*Player
+	Mu          sync.RWMutex
+	cmdRegistry *CommandRegistry
+	// playerLocations   map[string]string
 	world             *GameWorld
 	groups            map[string][]string
 	nextGroupID       int
@@ -64,7 +64,6 @@ func NewServer(worldFile string, logger *Logger) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to load world: %w", err)
 	}
-	// FIX: add validation
 	s := &Server{
 		players:      make(map[string]*Player),
 		groups:       make(map[string][]string),
@@ -138,7 +137,7 @@ func main() {
 		conn, err := listener.Accept()
 		if err != nil {
 			//log.Println("Error accepting conn:", err)
-			logger.Error("Error accepting connection", err)
+			logger.Error("Error accepting connection: %v", err)
 			continue
 		}
 		go server.handleConnection(conn)
