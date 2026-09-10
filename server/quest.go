@@ -83,6 +83,7 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 		errCode, errMsg = 406, "QUEST_ALREADY_COMPLETED"
 	} else if status == "abandoned" {
 		errCode, errMsg = 406, "QUEST_ALREADY_ABANDONED"
+		//status = "abandoned"
 	} else {
 		p.PlayerQuests[npcQuestID] = "active"
 		status = "active"
