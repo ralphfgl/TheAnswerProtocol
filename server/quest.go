@@ -11,11 +11,11 @@ import (
 
 func (s *Server) handleQuest(p *Player, npcRef string) error {
 	npcRef = strings.TrimSpace(npcRef)
+	p.Mu.Lock()
+	currentRoom := p.CurrentRoom
+	p.Mu.Unlock()
 	var targetNPC *NPC
 	s.Mu.RLock()
-	currentRoom := p.CurrentRoom
-	s.Mu.RUnlock()
-
 	for _, loc := range s.world.World.Locations {
 		if loc.Id == currentRoom {
 			for _, sp := range loc.Spawns {
@@ -34,30 +34,67 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 			break
 		}
 	}
+	var (
+		npcQuestGiver bool
+		npcQuestID    string
+		questDef      Quest
+		questExists   bool
+	)
+	if targetNPC != nil {
+		npcQuestGiver = targetNPC.QuestGiver
+		npcQuestID = targetNPC.QuestID
+		questDef, questExists = s.world.World.Quests[npcQuestID]
+	}
+	s.Mu.RUnlock()
 	if targetNPC == nil {
 		s.sendError(p, 404, "NPC_NOT_FOUND")
 		return nil
 	}
-	if !targetNPC.QuestGiver {
+	if !npcQuestGiver {
 		s.sendError(p, 406, "NO_QUEST_AVAILABLE")
 		return nil
 	}
-	fmt.Println("target NPC : ", targetNPC)
-	questID := targetNPC.QuestID
-	status, exists := p.PlayerQuests[questID]
+	if !questExists {
+		s.sendError(p, 500, "QUEST_DEFINITION_MISSING")
+		return nil
+	}
+	if questDef.Requires != "" {
+		p.Mu.Lock()
+		prereqStatus, prereqExists := p.PlayerQuests[questDef.Requires]
+		p.Mu.Unlock()
+		if !prereqExists || prereqStatus != "completed" {
+			s.sendError(p, 406, "QUEST_PREREQUISITE_NOT_MET")
+			return nil
+		}
+	}
+
+	p.Mu.Lock()
+	status, exists := p.PlayerQuests[npcQuestID]
+	var (
+		errCode int
+		errMsg  string
+	)
 	if !exists {
-		p.PlayerQuests[questID] = "active"
+		p.PlayerQuests[npcQuestID] = "active"
 		status = "active"
 	} else if status == "active" {
-		s.sendError(p, 406, "QUEST_ALREADY_ACCEPTED")
-		return nil
+		errCode, errMsg = 406, "QUEST_ALREADY_ACCEPTED"
 	} else if status == "completed" {
-		s.sendError(p, 406, "QUEST_ALREADY_COMPLETED")
+		errCode, errMsg = 406, "QUEST_ALREADY_COMPLETED"
+	} else if status == "abandoned" {
+		errCode, errMsg = 406, "QUEST_ALREADY_ABANDONED"
+	} else {
+		p.PlayerQuests[npcQuestID] = "active"
+		status = "active"
+	}
+	p.Mu.Unlock()
+	if errCode != 0 {
+		s.sendError(p, errCode, errMsg)
 		return nil
 	}
 	response := common.QuestResponse{
 		Type:   "quest",
-		Quest:  s.world.World.Quests[questID],
+		Quest:  questDef,
 		Status: status,
 	}
 	data, err := json.Marshal(response)
@@ -65,13 +102,14 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	s.handleQuests(p)
+	s.logger.Info("QUEST_ACCEPT player=%s quest=%s npc=%s room=%s", p.Username, npcQuestID, targetNPC.Name, currentRoom)
 	s.sendResponse(p, "OK "+string(data))
 	return nil
 }
 
 func (s *Server) progressQuest(p *Player, eventType, target string) {
-	// p.Mu.Lock()
-	// defer p.Mu.Unlock()
+	type msg struct{ title, reward string }
+	var msgs []msg
 	for id, state := range p.PlayerQuests {
 		if state != "active" {
 			continue
@@ -81,7 +119,11 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 			continue
 		}
 		p.PlayerQuests[id] = "completed"
+		s.logger.Info("QUEST_COMPLETE player=%s quest=%s type=%s target=%s reward=%s", p.Username, id, q.Type, q.Target, q.RewardItem)
 		if q.RewardItem != "" {
+			if q.RewardItem != "" {
+				s.logger.Info("QUEST_REWARD player=%s quest=%s item=%s", p.Username, id, q.RewardItem)
+			}
 			p.Inventory = append(p.Inventory, q.RewardItem)
 			for i, itemID := range p.Inventory {
 				if itemID == q.Target {
@@ -90,23 +132,31 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 				}
 			}
 		}
-		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", q.Title, q.RewardItem))
-		response := common.QuestResponse{
-			Type:   "quest",
-			Quest:  q,
-			Status: "completed",
-		}
-		if data, err := json.Marshal(response); err == nil {
-			s.sendResponse(p, "OK "+string(data))
-		}
-		s.handleInventory(p)
-		s.handleQuests(p)
+		// <<<<<<< HEAD
+		// 		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", q.Title, q.RewardItem))
+		// 		response := common.QuestResponse{
+		// 			Type:   "quest",
+		// 			Quest:  q,
+		// 			Status: "completed",
+		// 		}
+		// 		if data, err := json.Marshal(response); err == nil {
+		// 			s.sendResponse(p, "OK "+string(data))
+		// 		}
+		// 		s.handleInventory(p)
+		// 		s.handleQuests(p)
+		// =======
+		msgs = append(msgs, msg{q.Title, q.RewardItem})
+	}
+	for _, m := range msgs {
+		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", m.title, m.reward))
 	}
 }
 
 func (s *Server) handleQuests(p *Player) error {
+	p.Mu.Lock()
 	quests := make(map[string]string, len(p.PlayerQuests))
 	maps.Copy(quests, p.PlayerQuests)
+	p.Mu.Unlock()
 	response := common.QuestsResponse{
 		Type:     "quests",
 		QuestMap: quests,
@@ -117,5 +167,31 @@ func (s *Server) handleQuests(p *Player) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+
+func (s *Server) handleAbandonQuest(p *Player, questID string) error {
+	p.Mu.Lock()
+	questState, exists := p.PlayerQuests[questID]
+	if !exists {
+		p.Mu.Unlock()
+		s.sendError(p, 404, "QUEST_NOT_FOUND")
+		return nil
+	}
+	if questState == "completed" {
+		p.Mu.Unlock()
+		s.sendError(p, 406, "QUEST_ALREADY_COMPLETED")
+		return nil
+	}
+	if questState == "abandoned" {
+		p.Mu.Unlock()
+		s.sendError(p, 406, "QUEST_ALREADY_ABANDONED")
+		return nil
+	}
+	p.PlayerQuests[questID] = "abandoned"
+	p.Mu.Unlock()
+	s.sendResponse(p, fmt.Sprintf("OK quest abandoned=%s", questID))
+	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM QUEST %s abandoned quest: %s", p.Username, questID))
+	s.logger.Info("Quest abandoned: player=%s quest=%s", p.Username, questID)
 	return nil
 }

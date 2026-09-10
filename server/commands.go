@@ -106,7 +106,6 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 			}
 			return nil
 		},
-		// NOTE: return directly scope and message
 		Handler: func(p *Player, args []string) error {
 			scope := args[0]
 			message := strings.Join(args[1:], " ")
@@ -276,6 +275,21 @@ func (cr *CommandRegistry) registerCommands(s *Server) {
 		},
 		Handler: func(p *Player, args []string) error {
 			return s.handleQuests(p)
+		},
+	}
+	cr.commands["ABANDON_QUEST"] = &Command{
+		Name:         "ABANDON_QUEST",
+		MinArgs:      1,
+		MaxArgs:      0,
+		RequiresAuth: true,
+		Validator: func(args []string) error {
+			if len(args) < 1 {
+				return fmt.Errorf("ABANDON needs an auest ID or name")
+			}
+			return nil
+		},
+		Handler: func(p *Player, args []string) error {
+			return s.handleAbandonQuest(p, strings.Join(args, " "))
 		},
 	}
 }

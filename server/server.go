@@ -22,24 +22,27 @@ const (
 )
 
 type Player struct {
-	Username       string
-	Conn           net.Conn
-	State          ConnectionState
-	Mu             sync.Mutex
-	Writer         *bufio.Writer
-	CurrentRoom    string
-	GroupID        string
-	Inventory      []string
-	Attack         int
-	Defense        int
-	HP             int
-	MaxHP          int
-	Status         string
-	InCombat       bool
-	CombatTarget   string
-	CmdWindowStart time.Time
-	CmdInWindow    int
-	PlayerQuests   map[string]string // available active or completed
+	Username        string
+	Conn            net.Conn
+	State           ConnectionState
+	Mu              sync.Mutex
+	Writer          *bufio.Writer
+	CurrentRoom     string
+	GroupID         string
+	Inventory       []string
+	Attack          int
+	Defense         int
+	HP              int
+	MaxHP           int
+	Status          string
+	InCombat        bool
+	CombatTarget    string
+	CmdWindowStart  time.Time
+	CmdInWindow     int
+	PlayerQuests    map[string]string
+	ChatWindowStart time.Time
+	ChatInWindow    int
+	maxInventory    int
 }
 
 type Server struct {
@@ -53,11 +56,8 @@ type Server struct {
 	logger            *Logger
 	connectionMu      sync.Mutex
 	recentConnections []time.Time
+	maxTotalConn      int
 }
-
-// constructor, create a server instance
-// mutex has a zero value and is already usable
-// we use a struct literal, no malloc is needed
 
 func NewServer(worldFile string, logger *Logger) (*Server, error) {
 	world, err := parsing(worldFile)
@@ -66,10 +66,11 @@ func NewServer(worldFile string, logger *Logger) (*Server, error) {
 	}
 	// FIX: add validation
 	s := &Server{
-		players: make(map[string]*Player),
-		groups:  make(map[string][]string),
-		world:   &world,
-		logger:  logger,
+		players:      make(map[string]*Player),
+		groups:       make(map[string][]string),
+		world:        &world,
+		logger:       logger,
+		maxTotalConn: 100,
 	}
 	if err := validate(world); err != nil {
 		s.logger.Error("Validation error: %v", err)
@@ -145,6 +146,15 @@ func main() {
 }
 
 func (s *Server) handleConnection(conn net.Conn) {
+	s.Mu.Lock()
+	if len(s.players) >= s.maxTotalConn {
+		s.Mu.Unlock()
+		s.logger.Warn("LIMIT: server full")
+		conn.Write([]byte("ERR 503 SERVER_FULL\n"))
+		conn.Close()
+		return
+	}
+	s.Mu.Unlock()
 	s.checkRapidConnections()
 	address := conn.RemoteAddr().String()
 	s.logger.Info("Client connection opened from %s", address)
@@ -159,6 +169,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 		Status:       "healthy",
 		InCombat:     false,
 		PlayerQuests: make(map[string]string),
+		maxInventory: 10,
 	}
 	defer func() {
 		s.logger.Info("Client disconected: player=%s address=%s", player.Username, address)
@@ -174,11 +185,15 @@ func (s *Server) handleConnection(conn net.Conn) {
 			s.logger.Info("Connection closed for %s: %v", player.Username, err)
 			return
 		}
+		if len(line) > 104 {
+			s.sendError(player, 413, "MESSAGE_TOO_LONG")
+			s.logger.Warn("LIMIT: message too long, player=%s length=%d", player.Username, len(line))
+			return
+		}
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		// NOTE: add parsing of the command here before handling
 		s.handleCommand(player, line)
 	}
 }
@@ -209,7 +224,9 @@ func (s *Server) removePlayer(player *Player) {
 	if player.Username != "" {
 		s.Mu.Lock()
 		delete(s.players, player.Username)
+		playerCount := len(s.players)
 		s.Mu.Unlock()
+		s.broadcastAll(fmt.Sprintf("EVT STATS players=%d", playerCount))
 		s.logger.Info("Player %s removed", player.Username)
 	}
 }
@@ -243,4 +260,21 @@ func (s *Server) checkRapidConnections() {
 	if len(recent) > 2 {
 		s.logger.Warn("Possible rapid connection pattern: connections_last_minut=%d", len(recent))
 	}
+}
+
+func (s *Server) checkChatFlood(p *Player) bool {
+	now := time.Now()
+	p.Mu.Lock()
+	defer p.Mu.Unlock()
+
+	if now.Sub(p.ChatWindowStart) >= time.Minute {
+		p.ChatWindowStart = now
+		p.ChatInWindow = 0
+	}
+	p.ChatInWindow++
+	if p.ChatInWindow > 10 {
+		s.logger.Warn("LIMIT: Chat rate limit exceeded: player=%s count=%d", p.Username, p.ChatInWindow)
+		return false
+	}
+	return true
 }

@@ -22,33 +22,30 @@ func (s *Server) handleConnect(player *Player, username string) {
 		s.sendError(player, 400, "USERNAME_REQUIRED")
 		return
 	}
-	// check if username in use
 	s.Mu.Lock()
-	defer s.Mu.Unlock()
-	// map lookup in go returns 2 value, the actual value and a boolean hat tell if the key exist
-	// comma separate the assignement from the condition
 	if _, exists := s.players[username]; exists {
+		s.Mu.Unlock()
 		s.sendError(player, 201, "NAME_IN_USE")
 		return
 	}
+	s.Mu.Unlock()
+	player.Mu.Lock()
 	player.Username = username
 	player.State = Authenticated
 	player.CurrentRoom = "start"
-	// NOTE: quest
-	// player.QuestData = &PlayerQuestData{
-	// 	Quests: make(map[string]*QuestState),
-	// }
-
+	player.Mu.Unlock()
+	s.Mu.Lock()
 	s.players[username] = player
-
+	playerCount := len(s.players)
+	s.Mu.Unlock()
 	s.sendResponse(player, "OK connected")
+	s.broadcastAll(fmt.Sprintf("EVT STATS players=%d", playerCount))
 	s.logger.Info("Player authenticated: username=%s address=%s", username, player.Conn.RemoteAddr())
 }
 
 func (s *Server) handleQuit(player *Player) {
 	s.sendResponse(player, "OK bye")
 	log.Printf("Player %s quit", player.Username)
-	// NOTE: the defer will clean up, this is redundunt
 	player.Conn.Close()
 }
 
@@ -121,7 +118,6 @@ func (s *Server) handleLook(p *Player) error {
 }
 
 func (s *Server) handleMove(p *Player, direction string) error {
-	// NOTE: added against moving in combat
 	p.Mu.Lock()
 	inCombat := p.InCombat
 	p.Mu.Unlock()
@@ -145,8 +141,7 @@ func (s *Server) handleMove(p *Player, direction string) error {
 	s.Mu.Lock()
 	p.CurrentRoom = targetRoomID
 	s.Mu.Unlock()
-	// FIX: add logg?
-	// s.logger.Info("World state changed: player=%s move from=%s to=%s", p.Username, oldRoom, targetRoomID)
+	s.logger.Info("World state changed: player=%s move from=%s to=%s", p.Username, oldRoom, targetRoomID)
 	s.broadcastRoomEvent(oldRoom, "EVT ROOM PRESENCE LEAVE "+p.Username)
 	s.broadcastRoomEvent(targetRoomID, "EVT ROOM PRESENCE ENTER "+p.Username)
 	s.sendResponse(p, fmt.Sprintf("OK room=%s", p.CurrentRoom))
@@ -155,6 +150,10 @@ func (s *Server) handleMove(p *Player, direction string) error {
 }
 
 func (s *Server) handleChat(p *Player, scope string, message string) error {
+	if !s.checkChatFlood(p) {
+		s.sendError(p, 429, "CHAT_RATE_LIMIT_EXCEEDED")
+		return nil
+	}
 	event := fmt.Sprintf("EVT %s CHAT %s %s", scope, p.Username, message)
 	switch scope {
 	case "GLOBAL":
@@ -213,6 +212,7 @@ func (s *Server) handleGroupCreate(p *Player) error {
 	}
 	return nil
 }
+
 func (s *Server) handleGroupInvite(p *Player, args []string) error {
 	if p.GroupID == "" {
 		return fmt.Errorf("not in a group")
@@ -288,7 +288,7 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 	groupEvent := common.GroupInfo{
 		Type:      "group",
 		GroupList: slices.Collect(maps.Keys(s.groups)),
-		MyGroup: p.GroupID,
+		MyGroup:   p.GroupID,
 	}
 	jsonData, err := json.Marshal(groupEvent)
 	if err != nil {
@@ -299,7 +299,6 @@ func (s *Server) handleGroupDisplay(p *Player) error {
 }
 
 func (s *Server) handleTake(p *Player, itemRef string) error {
-	// NOTE: could change the world structure to map instead of slice to access directly with key
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
 		if s.world.World.Locations[i].Id == p.CurrentRoom {
@@ -324,17 +323,21 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 			break
 		}
 	}
-	// item not in the room
 	if targetItemID == "" {
 		s.sendError(p, 404, "ITEM_NOT_FOUND")
 		return nil
-		//return fmt.Errorf("item not found in room: %s", itemRef)
 	}
+	p.Mu.Lock()
+	if len(p.Inventory) >= p.maxInventory {
+		p.Mu.Unlock()
+		s.sendError(p, 409, "INVENTORY_FULL")
+		return nil
+	}
+	p.Mu.Unlock()
 	if !targetItem.Obtainable {
 		return fmt.Errorf("item cannot be taken: %s", targetItem.Name)
 	}
 	s.Mu.Lock()
-	// remove from the room
 	for i, id := range currentLocation.Items {
 		if id == targetItemID {
 			currentLocation.Items = append(currentLocation.Items[:i], currentLocation.Items[i+1:]...)
@@ -343,12 +346,8 @@ func (s *Server) handleTake(p *Player, itemRef string) error {
 	}
 	p.Inventory = append(p.Inventory, targetItemID)
 	s.Mu.Unlock()
-	fmt.Println("SD:LKFJKL: ", targetItemID)
 	s.progressQuest(p, "fetch_item", targetItemID)
-
-	// FIX :add logging?
-	// s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
-
+	s.logger.Info("World state changed: player=%s picked up item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK taken=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_TAKEN %s %s", p.Username, targetItemID))
 	s.handleLook(p)
@@ -413,8 +412,7 @@ func (s *Server) handleDrop(p *Player, itemRef string) error {
 	}
 	currentLocation.Items = append(currentLocation.Items, targetItemID)
 	s.Mu.Unlock()
-	// FIX :add logging?
-	// s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
+	s.logger.Info("World state changed: player=%s dropped item=%s room=%s", p.Username, targetItemID, p.CurrentRoom)
 	s.sendResponse(p, fmt.Sprintf("OK dropped=%s", targetItemID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM ITEM_DROP %s %s", p.Username, targetItemID))
 	s.handleLook(p)
@@ -484,7 +482,7 @@ func (s *Server) handleTalk(p *Player, npcRef string) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
-
+	s.logger.Info("NPC interaction: player=%s talked to npc=%s", p.Username, targetNPC.Name)
 	s.sendResponse(p, "OK "+string(jsonData))
 	return nil
 }

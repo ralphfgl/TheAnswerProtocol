@@ -17,7 +17,9 @@ func subtractOrZero(a, b int) int {
 }
 
 func (s *Server) handleAttack(p *Player, npcRef string) error {
+	npcRef = strings.TrimSpace(npcRef)
 	p.Mu.Lock()
+	currentRoom := p.CurrentRoom
 	if p.InCombat {
 		if p.CombatTarget != npcRef {
 			p.Mu.Unlock()
@@ -27,11 +29,10 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	p.Mu.Unlock()
 
-	// s.Mu.RLock()
-	// defer s.Mu.RUnlock()
+	s.Mu.RLock()
 	var currentLocation *Location
 	for i := range s.world.World.Locations {
-		if s.world.World.Locations[i].Id == p.CurrentRoom {
+		if s.world.World.Locations[i].Id == currentRoom {
 			currentLocation = &s.world.World.Locations[i]
 			break
 		}
@@ -56,13 +57,16 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		}
 	}
 	if targetNpcID == "" {
+		s.Mu.RUnlock()
 		s.sendError(p, 404, "NPC_NOT_FOUND")
 		return nil
 	}
 	if !targetNPC.Hostile {
+		s.Mu.RUnlock()
 		s.sendError(p, 405, "NPC_NOT_HOSTILE")
 		return nil
 	}
+	s.Mu.RUnlock()
 	p.Mu.Lock()
 	if !p.InCombat {
 		p.InCombat = true
@@ -107,9 +111,9 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	}
 	s.logger.Info("Combat: player=%s npc=%s damage=%d counter=%d npc_hp=%d player_hp=%d", p.Username, targetNPC.Name, playerDamage, npcDamage, targetNPC.Stats["hp"], p.HP)
 	if npcDefeated {
+		s.logger.Info("NPC_DEFEATED player=%s npc=%s room=%s", p.Username, targetNPC.Name, p.CurrentRoom)
 		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s defeated %s!", p.Username, targetNPC.Name))
 		s.removeNPCFromRoom(p.CurrentRoom, targetNpcID)
-		fmt.Println("TESTTTSETTTSET")
 		s.progressQuest(p, "defeat_npc", targetNpcID)
 		p.Mu.Lock()
 		p.InCombat = false
@@ -130,6 +134,7 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 		p.CombatTarget = ""
 		p.Status = "healthy"
 		p.Mu.Unlock()
+		s.logger.Info("PLAYER_DEFEATED player=%s npc=%s respawn=%s", p.Username, targetNPC.Name, p.CurrentRoom)
 		s.broadcastRoomEvent(oldRoom, fmt.Sprintf("EVT ROOM PRESENCE LEAVE %s", p.Username))
 		s.broadcastRoomEvent("start", fmt.Sprintf("EVT ROOM PRESENCE ENTER %s", p.Username))
 		s.sendResponse(p, "OK combat=lost")
