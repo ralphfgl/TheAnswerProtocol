@@ -185,7 +185,17 @@ func (s *Server) handleAbandonQuest(p *Player, questID string) error {
 	}
 	p.PlayerQuests[questID] = "abandoned"
 	p.Mu.Unlock()
-	s.sendResponse(p, fmt.Sprintf("OK quest abandoned=%s", questID))
+	response := common.QuestsResponse{
+		Type:     "quests",
+		QuestMap: p.PlayerQuests,
+		Count:    len(p.PlayerQuests),
+	}
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	s.sendResponse(p, "OK "+string(jsonData))
+	//s.sendResponse(p, fmt.Sprintf("OK quest abandoned=%s", questID))
 	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM QUEST %s abandoned quest: %s", p.Username, questID))
 	s.logger.Info("Quest abandoned: player=%s quest=%s", p.Username, questID)
 	return nil
