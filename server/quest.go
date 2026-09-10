@@ -121,9 +121,7 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 		p.PlayerQuests[id] = "completed"
 		s.logger.Info("QUEST_COMPLETE player=%s quest=%s type=%s target=%s reward=%s", p.Username, id, q.Type, q.Target, q.RewardItem)
 		if q.RewardItem != "" {
-			if q.RewardItem != "" {
-				s.logger.Info("QUEST_REWARD player=%s quest=%s item=%s", p.Username, id, q.RewardItem)
-			}
+			s.logger.Info("QUEST_REWARD player=%s quest=%s item=%s", p.Username, id, q.RewardItem)
 			p.Inventory = append(p.Inventory, q.RewardItem)
 			for i, itemID := range p.Inventory {
 				if itemID == q.Target {
@@ -132,23 +130,20 @@ func (s *Server) progressQuest(p *Player, eventType, target string) {
 				}
 			}
 		}
-		// <<<<<<< HEAD
-		// 		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", q.Title, q.RewardItem))
-		// 		response := common.QuestResponse{
-		// 			Type:   "quest",
-		// 			Quest:  q,
-		// 			Status: "completed",
-		// 		}
-		// 		if data, err := json.Marshal(response); err == nil {
-		// 			s.sendResponse(p, "OK "+string(data))
-		// 		}
-		// 		s.handleInventory(p)
-		// 		s.handleQuests(p)
-		// =======
 		msgs = append(msgs, msg{q.Title, q.RewardItem})
+		s.broadcastGroupEvent(p.CurrentRoom, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", q.Title, q.RewardItem))
+		response := common.QuestResponse{
+			Type:   "quest",
+			Quest:  q,
+			Status: "completed",
+		}
+		if data, err := json.Marshal(response); err == nil {
+			s.sendResponse(p, "OK "+string(data))
+		}
 	}
-	for _, m := range msgs {
-		s.sendResponse(p, fmt.Sprintf("EVT QUEST %s completed! Reward: %s", m.title, m.reward))
+	if len(msgs) > 0 {
+		s.handleInventory(p)
+		s.handleQuests(p)
 	}
 }
 
