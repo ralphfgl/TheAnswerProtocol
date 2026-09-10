@@ -78,14 +78,19 @@
     margin-bottom: 5px;
     padding: 5px 10px;
     border-radius: 20px;
-
+    display: flex;
+    align-items: center;
 }
 
 .quest_active{
-    background-color: #d68b5c;
+    background-color: rgb(242, 134, 113);
 }
 
 .quest_done{
     background-color: #aef197;
+}
 
+.quest_abondoned{
+    background-color: grey;
+    opacity: 0.5;
 }

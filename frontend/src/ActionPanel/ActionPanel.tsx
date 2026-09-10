@@ -66,7 +66,7 @@ function ActionPanel(props: ActionPanelProps) {
     useEffect(() => {
         const timer = setInterval(() => {
             onCommand("GROUP DISPLAY");
-        }, 10000);
+        }, 15000);
         return () => clearInterval(timer);
     }, [onCommand]);
 
@@ -91,9 +91,10 @@ function ActionPanel(props: ActionPanelProps) {
                 Object.values(questData).map((quest) => (
                     <div
                         key={quest.quest.id}
-                        className={`quest_item ${quest.status === "active" ? 'quest_active' : 'quest_done'}`}
+                        className={`quest_item ${quest.status === "active" ? 'quest_active' : quest.status === "abandoned" ? 'quest_abondoned' : 'quest_done'}`}
                     >
                         <p>{quest.quest.description}</p>
+                        {quest.status === "active" && <button className='action_button' onClick={() => onCommand("ABANDON_QUEST " + quest.quest.id)}>Abandon</button>}
                     </div>
                 ))
             ) : (

@@ -112,7 +112,7 @@ func (s *Server) handleAttack(p *Player, npcRef string) error {
 	s.logger.Info("Combat: player=%s npc=%s damage=%d counter=%d npc_hp=%d player_hp=%d", p.Username, targetNPC.Name, playerDamage, npcDamage, targetNPC.Stats["hp"], p.HP)
 	if npcDefeated {
 		s.logger.Info("NPC_DEFEATED player=%s npc=%s room=%s", p.Username, targetNPC.Name, p.CurrentRoom)
-		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM COMBAT %s defeated %s!", p.Username, targetNPC.Name))
+		s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM KILL %s defeated %s!", p.Username, targetNPC.Name))
 		s.removeNPCFromRoom(p.CurrentRoom, targetNpcID)
 		s.progressQuest(p, "defeat_npc", targetNpcID)
 		p.Mu.Lock()
