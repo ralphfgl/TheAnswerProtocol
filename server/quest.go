@@ -188,7 +188,7 @@ func (s *Server) handleAbandonQuest(p *Player, questID string) error {
 	p.Mu.Unlock()
 	questDef := s.world.World.Quests[questID]
 	response := common.QuestResponse{
-		Type:   "quests",
+		Type:   "quest",
 		Quest:  questDef,
 		Status: "abandoned",
 	}
