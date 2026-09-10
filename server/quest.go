@@ -58,6 +58,16 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 		s.sendError(p, 500, "QUEST_DEFINITION_MISSING")
 		return nil
 	}
+	if questDef.Requires != "" {
+		p.Mu.Lock()
+		prereqStatus, prereqExists := p.PlayerQuests[questDef.Requires]
+		p.Mu.Unlock()
+		if !prereqExists || prereqStatus != "completed" {
+			s.sendError(p, 406, "QUEST_PREREQUISITE_NOT_MET")
+			return nil
+		}
+	}
+
 	p.Mu.Lock()
 	status, exists := p.PlayerQuests[npcQuestID]
 	var (
@@ -71,8 +81,11 @@ func (s *Server) handleQuest(p *Player, npcRef string) error {
 		errCode, errMsg = 406, "QUEST_ALREADY_ACCEPTED"
 	} else if status == "completed" {
 		errCode, errMsg = 406, "QUEST_ALREADY_COMPLETED"
+	} else if status == "abandoned" {
+		errCode, errMsg = 406, "QUEST_ALREADY_ABANDONED"
 	} else {
 		p.PlayerQuests[npcQuestID] = "active"
+		status = "active"
 	}
 	p.Mu.Unlock()
 	if errCode != 0 {
@@ -140,5 +153,31 @@ func (s *Server) handleQuests(p *Player) error {
 		return fmt.Errorf("failed to marshal JSON: %w", err)
 	}
 	s.sendResponse(p, "OK "+string(jsonData))
+	return nil
+}
+
+func (s *Server) handleAbandonQuest(p *Player, questID string) error {
+	p.Mu.Lock()
+	questState, exists := p.PlayerQuests[questID]
+	if !exists {
+		p.Mu.Unlock()
+		s.sendError(p, 404, "QUEST_NOT_FOUND")
+		return nil
+	}
+	if questState == "completed" {
+		p.Mu.Unlock()
+		s.sendError(p, 406, "QUEST_ALREADY_COMPLETED")
+		return nil
+	}
+	if questState == "abandoned" {
+		p.Mu.Unlock()
+		s.sendError(p, 406, "QUEST_ALREADY_ABANDONED")
+		return nil
+	}
+	p.PlayerQuests[questID] = "abandoned"
+	p.Mu.Unlock()
+	s.sendResponse(p, fmt.Sprintf("OK quest abandoned=%s", questID))
+	s.broadcastRoomEvent(p.CurrentRoom, fmt.Sprintf("EVT ROOM QUEST %s abandoned quest: %s", p.Username, questID))
+	s.logger.Info("Quest abandoned: player=%s quest=%s", p.Username, questID)
 	return nil
 }

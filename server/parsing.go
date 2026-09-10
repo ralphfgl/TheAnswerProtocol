@@ -60,6 +60,7 @@ type Quest struct {
 	RewardItem       string `json:"reward_item"`
 	DialogueStart    string `json:"dialogue_start,omitempty"`
 	DialogueComplete string `json:"dialogue_complete"`
+	Requires         string `json:"requires,omitempty"`
 }
 
 type ValidationErrors []string
@@ -228,7 +229,6 @@ func validate(g GameWorld) error {
 			}
 		}
 	}
-
 	// 11. Check for bidirectional exits (optional but recommended)
 	for _, loc := range g.World.Locations {
 		for direction, targetId := range loc.Exits {
